@@ -1,0 +1,4 @@
+six
+Products.PluggableAuthService
+Zope
+cryptography

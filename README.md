@@ -1,1 +1,1 @@
-# Products.zmsPluggableAuthService
+# ZMS PluggableAuthService Adapter

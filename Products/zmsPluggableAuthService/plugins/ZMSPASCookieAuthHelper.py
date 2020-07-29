@@ -24,6 +24,7 @@ $Id$
 from __future__ import absolute_import
 from __future__ import print_function
 from base64 import encodestring, decodestring
+import binascii
 from binascii import Error
 from six.moves.urllib.parse import quote, unquote
 
@@ -165,8 +166,9 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
 
         elif cookie and cookie != 'deleted':
             raw = unquote(cookie)
+            # import sys; sys.stdout = sys.__stdout__; from pdb import set_trace; set_trace()
             try:
-                cookie_val = self.decryptCookie(raw)
+                cookie_val = self.decryptCookie(raw.encode('utf8')).decode('utf8')
             except Error:
                 # Cookie is in a different format, so it is not ours
                 return creds
@@ -178,8 +180,10 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
                 return creds
 
             try:
-                creds['login'] = login.decode('hex')
-                creds['password'] = password.decode('hex')
+                # creds['login'] = login.decode('hex')
+                # creds['password'] = password.decode('hex')
+                creds['login'] =  binascii.unhexlify(login.encode('utf8')).decode('utf8')
+                creds['password'] = binascii.unhexlify(password.encode('utf8')).decode('utf8')
             except TypeError:
                 # Cookie is in a different format, so it is not ours
                 return {}
@@ -204,7 +208,8 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
     security.declarePrivate('updateCredentials')
     def updateCredentials(self, request, response, login, new_password):
         """ Respond to change of credentials (NOOP for basic auth). """
-        cookie_str = '%s:%s' % (login.encode('hex'), new_password.encode('hex'))
+        # cookie_str = '%s:%s' % (login.encode('hex'), new_password.encode('hex'))
+        cookie_str = b'%s:%s'%(binascii.hexlify(login.encode('utf8')), binascii.hexlify(new_password.encode('utf8')))
         cookie_val = self.encryptCookie(cookie_str)
         cookie_val = cookie_val.rstrip()
         response.setCookie(self.cookie_name, quote(cookie_val), path='/')

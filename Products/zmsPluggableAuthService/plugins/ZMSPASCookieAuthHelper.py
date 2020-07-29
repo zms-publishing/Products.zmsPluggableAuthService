@@ -1,38 +1,44 @@
-# -*- coding: utf-8 -*- 
-################################################################################
-# ZMSPASCookieAuthHelper.py
+##############################################################################
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
+# Copyright (c) 2001 Zope Foundation and Contributors
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this
+# distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-################################################################################
+##############################################################################
 """ Class: ZMSPASCookieAuthHelper
 
 $Id$
 """
 
 from __future__ import absolute_import
-from __future__ import print_function
+import six
 from base64 import encodestring, decodestring
-import binascii
 from binascii import Error
-from six.moves.urllib.parse import quote, unquote
+if six.PY3:                           # Py3
+  import urllib.parse                 as urllib_parse
+  from urllib.parse import quote_plus as urllib_quote_plus
+  from urllib.parse import unquote    as urllib_unquote
+  from urllib.parse import urlparse   as urllib_urlparse
+  from io import BytesIO              as PyBytesIO
+else:                                 # Py2
+  import urlparse                     as urllib_parse
+  from urllib import quote_plus       as urllib_quote_plus
+  from urllib import unquote          as urllib_quote
+  from urlparse import urlparse       as urllib_urlparse
+  from cStringIO import StringIO      as PyBytesIO
 
 from AccessControl.SecurityInfo import ClassSecurityInfo
 from AccessControl.Permissions import view
 from AccessControl.class_init import InitializeClass
-
 from OFS.Folder import Folder
+
+
 from zope.interface import Interface
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
@@ -44,6 +50,12 @@ from Products.PluggableAuthService.interfaces.plugins import ICredentialsUpdateP
 from Products.PluggableAuthService.interfaces.plugins import ICredentialsResetPlugin
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
+
+
+def getSigner():
+  import itsdangerous
+  secret_key = 'zms#4u'
+  return itsdangerous.Signer(secret_key)
 
 
 class IZMSPASCookieAuthHelper(Interface):
@@ -89,12 +101,6 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
                     , 'type'  : 'string'
                     , 'mode'  : 'w'
                     }
-                  , { 'id'     : 'secret_key'
-                    , 'label'  : 'Secret Key'
-                    , 'type'   : 'string'
-                    , 'mode'   : 'w'
-                    , 'default': ''
-                    }
                   , { 'id'    : 'login_path'
                     , 'label' : 'Login Form'
                     , 'type'  : 'string'
@@ -110,65 +116,47 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
     def __init__(self, id, title=None, cookie_name=''):
         self._setId(id)
         self.title = title
-        self.secret_key = ''
+
         if cookie_name:
             self.cookie_name = cookie_name
 
 
-    def getCipherSuite(self):
-        from cryptography.fernet import Fernet
-        if not getattr(self,'secret_key',''):
-            self.secret_key = Fernet.generate_key()
-        cipher_suite = Fernet(self.secret_key)
-        return cipher_suite
-
-
-    def encryptCookie(self, cookie):
-        print("##### encryptCookie",1,cookie)
-        try:
-            cipher_suite = self.getCipherSuite() 
-            cookie = cipher_suite.encrypt(cookie)
-        except:
-            import sys,traceback
-            t,v,tb = sys.exc_info()
-            print("###### encryptCookie: can't",traceback.format_exception(t, v, tb))
-            cookie = encodestring(cookie)
-        print("##### encryptCookie",2,cookie)
-        return cookie
-
-
-    def decryptCookie(self, cookie):
-        print("##### decryptCookie",1,cookie)
-        try:
-            cipher_suite = self.getCipherSuite() 
-            cookie = cipher_suite.decrypt(cookie)
-        except:
-            import sys,traceback
-            t,v,tb = sys.exc_info()
-            print("###### decryptCookie: can't",traceback.format_exception(t, v, tb))
-            cookie = decodestring(cookie)
-        print("##### decryptCookie",2,cookie)
-        return cookie
+    security.declarePrivate('isSigned')
+    def isSigned(self, creds):
+      login = creds['login']
+      signature = creds.get('signature','')
+      signed = False
+      try:
+        signer = getSigner()
+        signer.unsign(login+'.'+signature)
+      except itsdangerous.BadSignature:
+        pass
+      return signed
 
 
     security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
         """ Extract credentials from cookie or 'request'. """
         creds = {}
-        session = request.SESSION
         cookie = request.get(self.cookie_name, '')
         # Look in the request.form for the names coming from the login form
         login = request.form.get('__ac_name', '')
 
-        if login and '__ac_password' in request.form:
+        if login and request.form.has_key('__ac_password'):
             creds['login'] = login
             creds['password'] = request.form.get('__ac_password', '')
 
         elif cookie and cookie != 'deleted':
             raw = unquote(cookie)
-            # import sys; sys.stdout = sys.__stdout__; from pdb import set_trace; set_trace()
+            
+            signer = getSigner()
+            creds['login'] = signer.unsign(raw)
+            creds['password'] = '******'
+            creds['signature'] = signer.get_signature(login)
+            
+            """
             try:
-                cookie_val = self.decryptCookie(raw.encode('utf8')).decode('utf8')
+                cookie_val = decodestring(raw)
             except Error:
                 # Cookie is in a different format, so it is not ours
                 return creds
@@ -180,13 +168,20 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
                 return creds
 
             try:
-                # creds['login'] = login.decode('hex')
-                # creds['password'] = password.decode('hex')
-                creds['login'] =  binascii.unhexlify(login.encode('utf8')).decode('utf8')
-                creds['password'] = binascii.unhexlify(password.encode('utf8')).decode('utf8')
+                creds['login'] = login.decode('hex')
+                creds['password'] = password.decode('hex')
+                
+                signer = getSigner()
+                slogin = signer.sign(creds['login'])
+                spassword = signer.sign(creds['password'])
+                print "### extractCredentials"
+                print "login:",slogin,":",creds['login']
+                print "login:",spassword,":",creds['password']
+                
             except TypeError:
                 # Cookie is in a different format, so it is not ours
                 return {}
+            """
 
         if creds:
             creds['remote_host'] = request.get('REMOTE_HOST', '')
@@ -208,10 +203,19 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
     security.declarePrivate('updateCredentials')
     def updateCredentials(self, request, response, login, new_password):
         """ Respond to change of credentials (NOOP for basic auth). """
-        # cookie_str = '%s:%s' % (login.encode('hex'), new_password.encode('hex'))
-        cookie_str = b'%s:%s'%(binascii.hexlify(login.encode('utf8')), binascii.hexlify(new_password.encode('utf8')))
-        cookie_val = self.encryptCookie(cookie_str)
+        
+        signer = getSigner()
+        slogin = signer.sign(login)
+        print("### updateCredentials")
+        print("login:",slogin,":",login)
+        
+        """
+        cookie_str = '%s:%s' % (login.encode('hex'), new_password.encode('hex'))
+        cookie_val = encodestring(cookie_str)
         cookie_val = cookie_val.rstrip()
+        """
+        cookie_val = slogin
+        
         response.setCookie(self.cookie_name, quote(cookie_val), path='/')
 
 
@@ -239,7 +243,7 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
         resp = req['RESPONSE']
 
         # If we set the auth cookie before, delete it now.
-        if self.cookie_name in resp.cookies:
+        if resp.cookies.has_key(self.cookie_name):
             del resp.cookies[self.cookie_name]
 
         # Redirect if desired.

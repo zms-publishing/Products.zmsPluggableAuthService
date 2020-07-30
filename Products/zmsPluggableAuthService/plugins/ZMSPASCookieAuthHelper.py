@@ -166,7 +166,6 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
 
         elif cookie and cookie != 'deleted':
             raw = unquote(cookie)
-            # import sys; sys.stdout = sys.__stdout__; from pdb import set_trace; set_trace()
             try:
                 cookie_val = self.decryptCookie(raw.encode('utf8')).decode('utf8')
             except Error:

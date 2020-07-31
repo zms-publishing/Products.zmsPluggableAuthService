@@ -124,30 +124,30 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
 
 
     def encryptCookie(self, cookie):
-        print("##### encryptCookie",1,cookie)
+        # print("##### encryptCookie",1,cookie)
         try:
             cipher_suite = self.getCipherSuite() 
             cookie = cipher_suite.encrypt(cookie)
         except:
             import sys,traceback
             t,v,tb = sys.exc_info()
-            print("###### encryptCookie: can't",traceback.format_exception(t, v, tb))
+            # print("###### encryptCookie: can't",traceback.format_exception(t, v, tb))
             cookie = encodestring(cookie)
-        print("##### encryptCookie",2,cookie)
+        # print("##### encryptCookie",2,cookie)
         return cookie
 
 
     def decryptCookie(self, cookie):
-        print("##### decryptCookie",1,cookie)
+        # print("##### decryptCookie",1,cookie)
         try:
             cipher_suite = self.getCipherSuite() 
             cookie = cipher_suite.decrypt(cookie)
         except:
             import sys,traceback
             t,v,tb = sys.exc_info()
-            print("###### decryptCookie: can't",traceback.format_exception(t, v, tb))
+            # print("###### decryptCookie: can't",traceback.format_exception(t, v, tb))
             cookie = decodestring(cookie)
-        print("##### decryptCookie",2,cookie)
+        # print("##### decryptCookie",2,cookie)
         return cookie
 
 

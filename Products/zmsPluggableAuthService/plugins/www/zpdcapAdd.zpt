@@ -1,0 +1,39 @@
+<h1 tal:replace="structure here/manage_page_header">Header</h1>
+<h1 tal:replace="structure here/manage_tabs">Tabs</h1>
+
+<h2 tal:define="form_title string:Add a ZMS PluggableAuthService Dangerous Cookie Auth Plugin"
+    tal:replace="structure here/manage_form_title">Form Title</h2>
+
+<p class="form-help"> 
+ZMS PluggableAuthService Dangerous Cookie Auth Plugin.
+</p>
+
+<form action="addZMSPASDangerousCookieAuthPlugin" method="post" 
+ enctype="multipart/form-data">
+  <div class="form-group row">
+    <label for="id" class="form-label col-sm-3 col-md-2">Id</label>
+    <div class="col-sm-9 col-md-10">
+      <input type="text" name="id" size="40" />
+    </div>
+  </div>
+  <div class="form-group row">
+    <label for="title" class="form-label col-sm-3 col-md-2">Title</label>
+    <div class="col-sm-9 col-md-10">
+      <input type="text" name="title" size="40" />
+    </div>
+  </div>
+  <div class="form-group row">
+    <label for="cookie_name" class="form-label col-sm-3 col-md-2">Cookie-Name</label>
+    <div class="col-sm-9 col-md-10">
+      <input type="text" name="cookie_name" size="40" />
+    </div>
+  </div>
+  <div class="form-group row">
+    <label class="form-label col-sm-3 col-md-2"></label>
+    <div class="col-sm-9 col-md-10">
+      <input class="form-element" type="submit" name="submit" value=" Add " /> 
+    </div>
+  </div>
+</form>
+
+<h1 tal:replace="structure here/manage_page_footer">Footer</h1>

@@ -39,6 +39,7 @@ from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.PageTemplates.ZopePageTemplate import ZopePageTemplate
 
 from Products.PluggableAuthService.interfaces.plugins import ILoginPasswordHostExtractionPlugin
+from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
 from Products.PluggableAuthService.interfaces.plugins import IChallengePlugin
 from Products.PluggableAuthService.interfaces.plugins import ICredentialsUpdatePlugin
 from Products.PluggableAuthService.interfaces.plugins import ICredentialsResetPlugin
@@ -128,7 +129,9 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
             if type(d) is dict:
               token = self.encryptCookie(d)
         if token:
-            REQUEST.RESPONSE.setCookie(self.cookie_name, token)
+            path = self.getPhysicalPath()
+            path = path[:path.index('acl_users')]
+            REQUEST.RESPONSE.setCookie(self.cookie_name, token,path='/'.join(path))
         elif self.cookie_name in REQUEST.cookies:
             REQUEST.RESPONSE.expireCookie(self.cookie_name)             
         return REQUEST.RESPONSE.redirect(REQUEST['HTTP_REFERER'])
@@ -154,59 +157,29 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
         """ Extract credentials from cookie or 'request'. """
-        creds = {}
-        session = request.SESSION
-        cookie = request.get(self.cookie_name, '')
-        # Look in the request.form for the names coming from the login form
-        login = request.form.get('__ac_name', '')
-
-        if login and '__ac_password' in request.form:
-            creds['login'] = login
-            creds['password'] = request.form.get('__ac_password', '')
-
-        elif cookie and cookie != 'deleted':
-            raw = unquote(cookie)
-            try:
-                cookie_val = self.decryptCookie(raw.encode('utf8')).decode('utf8')
-            except Error:
-                # Cookie is in a different format, so it is not ours
-                return creds
-
-            try:
-                login, password = cookie_val.split(':')
-            except ValueError:
-                # Cookie is in a different format, so it is not ours
-                return creds
-
-            try:
-                # creds['login'] = login.decode('hex')
-                # creds['password'] = password.decode('hex')
-                creds['login'] =  binascii.unhexlify(login.encode('utf8')).decode('utf8')
-                creds['password'] = binascii.unhexlify(password.encode('utf8')).decode('utf8')
-            except TypeError:
-                # Cookie is in a different format, so it is not ours
-                return {}
-
+        print("extractCredentials")
+        token = request.get(self.cookie_name, '')
+        creds = self.decryptCookie(token)
         if creds:
             creds['remote_host'] = request.get('REMOTE_HOST', '')
-
             try:
                 creds['remote_address'] = request.getClientAddr()
             except AttributeError:
                 creds['remote_address'] = request.get('REMOTE_ADDR', '')
-
         return creds
 
 
     security.declarePrivate('challenge')
     def challenge(self, request, response, **kw):
         """ Challenge the user for credentials. """
+        print("challenge")
         return self.unauthorized()
 
 
     security.declarePrivate('updateCredentials')
     def updateCredentials(self, request, response, login, new_password):
         """ Respond to change of credentials (NOOP for basic auth). """
+        print("updateCredentials")
         # cookie_str = '%s:%s' % (login.encode('hex'), new_password.encode('hex'))
         cookie_str = b'%s:%s'%(binascii.hexlify(login.encode('utf8')), binascii.hexlify(new_password.encode('utf8')))
         cookie_val = self.encryptCookie(cookie_str)
@@ -217,11 +190,13 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     security.declarePrivate('resetCredentials')
     def resetCredentials(self, request, response):
         """ Raise unauthorized to tell browser to clear credentials. """
+        print("resetCredentials(")
         response.expireCookie(self.cookie_name, path='/')
 
 
     security.declarePrivate('unauthorized')
     def unauthorized(self):
+        print("unauthorized")
         req = self.REQUEST
         resp = req['RESPONSE']
 
@@ -238,6 +213,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         """ Set a cookie and redirect to the url that we tried to
         authenticate against originally.
         """
+        print("login")
         request = self.REQUEST
         response = request['RESPONSE']
 
@@ -260,9 +236,28 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
 
         return response.redirect(came_from)
 
+
+    #
+    #    IAuthenticationPlugin implementation
+    #
+    security.declarePrivate( 'authenticateCredentials' )
+    def authenticateCredentials( self, credentials, request=None ):
+
+        """ See IAuthenticationPlugin.
+        """
+        print("authenticateCredentials")
+        request = self.REQUEST
+        token = request.get(self.cookie_name, '')
+        creds = self.decryptCookie(token)
+        user_id = creds['login']
+        info = creds
+        return user_id, info
+
+
 classImplements( ZMSPASDangerousCookieAuthPlugin
                , IZMSPASDangerousCookieAuthPlugin
                , ILoginPasswordHostExtractionPlugin
+               , IAuthenticationPlugin
                , IChallengePlugin
                , ICredentialsUpdatePlugin
                , ICredentialsResetPlugin

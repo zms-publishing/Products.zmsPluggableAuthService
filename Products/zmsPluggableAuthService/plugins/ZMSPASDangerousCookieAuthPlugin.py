@@ -78,6 +78,8 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     cookie_name = '__ginger_snap'
     security = ClassSecurityInfo()
 
+    mock = PageTemplateFile('www/zpdcapMock', globals())
+
     _properties = ( { 'id'    : 'title'
                     , 'label' : 'Title'
                     , 'type'  : 'string'
@@ -87,6 +89,12 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
                     , 'label' : 'Cookie Name'
                     , 'type'  : 'string'
                     , 'mode'  : 'w'
+                    }
+                  , { 'id'     : 'secret_key'
+                    , 'label'  : 'Secret Key'
+                    , 'type'   : 'string'
+                    , 'mode'   : 'w'
+                    , 'default': ''
                     }
                   )
 
@@ -98,36 +106,45 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     def __init__(self, id, title=None, cookie_name=''):
         self._setId(id)
         self.title = title
+        self.secret_key = ''
         if cookie_name:
             self.cookie_name = cookie_name
 
 
-    def encryptCookie(self, cookie):
-        # print("##### encryptCookie",1,cookie)
-        try:
-            cipher_suite = self.getCipherSuite() 
-            cookie = cipher_suite.encrypt(cookie)
-        except:
-            import sys,traceback
-            t,v,tb = sys.exc_info()
-            # print("###### encryptCookie: can't",traceback.format_exception(t, v, tb))
-            cookie = encodestring(cookie)
-        # print("##### encryptCookie",2,cookie)
-        return cookie
+    def getSecretKey(self):
+        from cryptography.fernet import Fernet
+        if not getattr(self,'secret_key',''):
+            self.secret_key = Fernet.generate_key()
+        return self.secret_key
+        
+    
+    def mockCookie(self, REQUEST):
+        """ mockCookie """
+        token = None
+        d = REQUEST['d'].strip()
+        if d.startswith('{') and d.endswith('}'):
+          d = eval('(%s)'%d)
+          if type(d) is dict:
+            token = self.encryptCookie(d)
+        REQUEST.RESPONSE.setCookie(self.cookie_name, token)             
+        return self.mock(REQUEST)
 
 
-    def decryptCookie(self, cookie):
-        # print("##### decryptCookie",1,cookie)
+    def encryptCookie(self, d):
+        from itsdangerous import URLSafeSerializer
+        auth_s = URLSafeSerializer(self.getSecretKey(), "auth")
+        token = auth_s.dumps(d)
+        return token
+
+
+    def decryptCookie(self, token):
         try:
-            cipher_suite = self.getCipherSuite() 
-            cookie = cipher_suite.decrypt(cookie)
+            from itsdangerous import URLSafeSerializer
+            auth_s = URLSafeSerializer(self.getSecretKey(), "auth")
+            data = auth_s.loads(token)
+            return data["name"]
         except:
-            import sys,traceback
-            t,v,tb = sys.exc_info()
-            # print("###### decryptCookie: can't",traceback.format_exception(t, v, tb))
-            cookie = decodestring(cookie)
-        # print("##### decryptCookie",2,cookie)
-        return cookie
+            return None
 
 
     security.declarePrivate('extractCredentials')
@@ -208,55 +225,9 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         if self.cookie_name in resp.cookies:
             del resp.cookies[self.cookie_name]
 
-        # Redirect if desired.
-        url = self.getLoginURL()
-        if url is not None:
-            came_from = req.get('came_from', None)
-
-            if came_from is None:
-                came_from = req.get('ACTUAL_URL', '')
-                query = req.get('QUERY_STRING')
-                if query:
-                    if not query.startswith('?'):
-                        query = '?' + query
-                    came_from = came_from + query
-            else:
-                # If came_from contains a value it means the user
-                # must be coming through here a second time
-                # Reasons could be typos when providing credentials
-                # or a redirect loop (see below)
-                req_url = req.get('ACTUAL_URL', '')
-
-                if req_url and req_url == url:
-                    # Oops... The login_form cannot be reached by the user -
-                    # it might be protected itself due to misconfiguration -
-                    # the only sane thing to do is to give up because we are
-                    # in an endless redirect loop.
-                    return 0
-
-            if '?' in url:
-                sep = '&'
-            else:
-                sep = '?'
-            url = '%s%scame_from=%s' % (url, sep, quote(came_from))
-            resp.redirect(url, lock=1)
-            resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
-            resp.setHeader('Cache-Control', 'no-cache')
-            return 1
-
         # Could not challenge.
         return 0
 
-
-    security.declarePrivate('getLoginURL')
-    def getLoginURL(self):
-        """ Where to send people for logging in """
-        if self.login_path.startswith('/') or '://' in self.login_path:
-            return self.login_path
-        elif self.login_path != '':
-            return '%s/%s' % (self.absolute_url(), self.login_path)
-        else:
-            return None
 
     security.declarePublic('login')
     def login(self):

@@ -31,7 +31,7 @@ ZMS PluggableAuthService Dangerous Cookie Auth Plugin.
 </p>
 
 <form action="mockCookie" method="post" enctype="multipart/form-data" tal:define="
-        cookie_value python:request.RESPONSE.cookies.get(here.cookie_name,None);
+        cookie_value python:request.cookies.get(here.cookie_name,None);
         d python:here.decryptCookie(cookie_value);
         default_value python:{'name': 'foo', 'roles': ['ZMSAuthor']}">
   <div class="form-group row">

@@ -121,18 +121,22 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     def mockCookie(self, REQUEST):
         """ mockCookie """
         token = None
-        d = REQUEST['d'].strip()
-        if d.startswith('{') and d.endswith('}'):
-          d = eval('(%s)'%d)
-          if type(d) is dict:
-            token = self.encryptCookie(d)
-        REQUEST.RESPONSE.setCookie(self.cookie_name, token)             
-        return self.mock(REQUEST)
+        if REQUEST.has_key('d'):
+          d = REQUEST.get('d','').strip()
+          if d.startswith('{') and d.endswith('}'):
+            d = eval('(%s)'%d)
+            if type(d) is dict:
+              token = self.encryptCookie(d)
+        if token:
+            REQUEST.RESPONSE.setCookie(self.cookie_name, token)
+        elif self.cookie_name in REQUEST.cookies:
+            REQUEST.RESPONSE.expireCookie(self.cookie_name)             
+        return REQUEST.RESPONSE.redirect(REQUEST['HTTP_REFERER'])
 
 
     def encryptCookie(self, d):
         from itsdangerous import URLSafeSerializer
-        auth_s = URLSafeSerializer(self.getSecretKey(), "auth")
+        auth_s = URLSafeSerializer(self.getSecretKey())
         token = auth_s.dumps(d)
         return token
 
@@ -140,9 +144,9 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     def decryptCookie(self, token):
         try:
             from itsdangerous import URLSafeSerializer
-            auth_s = URLSafeSerializer(self.getSecretKey(), "auth")
-            data = auth_s.loads(token)
-            return data["name"]
+            auth_s = URLSafeSerializer(self.getSecretKey())
+            d = auth_s.loads(token)
+            return d
         except:
             return None
 

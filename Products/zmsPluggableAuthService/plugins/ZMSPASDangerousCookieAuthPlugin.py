@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- 
 ################################################################################
-# ZMSPASCookieAuthHelper.py
+# ZMSPASDangerousCookieAuthPlugin.py
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ################################################################################
-""" Class: ZMSPASDangerousCookieAuthPluginr
+""" Class: ZMSPASDangerousCookieAuthPlugin
 
 $Id$
 """
@@ -40,9 +40,11 @@ from Products.PageTemplates.ZopePageTemplate import ZopePageTemplate
 
 from Products.PluggableAuthService.interfaces.plugins import ILoginPasswordHostExtractionPlugin
 from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
+from Products.PluggableAuthService.interfaces.plugins import IRolesPlugin
 from Products.PluggableAuthService.interfaces.plugins import IChallengePlugin
-from Products.PluggableAuthService.interfaces.plugins import ICredentialsUpdatePlugin
 from Products.PluggableAuthService.interfaces.plugins import ICredentialsResetPlugin
+from Products.PluggableAuthService.interfaces.plugins import IUserAdderPlugin
+from Products.PluggableAuthService.interfaces.plugins import IUserEnumerationPlugin
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
 
@@ -157,7 +159,6 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
         """ Extract credentials from cookie or 'request'. """
-        print("extractCredentials")
         token = request.get(self.cookie_name, '')
         creds = self.decryptCookie(token)
         if creds:
@@ -172,31 +173,17 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     security.declarePrivate('challenge')
     def challenge(self, request, response, **kw):
         """ Challenge the user for credentials. """
-        print("challenge")
         return self.unauthorized()
-
-
-    security.declarePrivate('updateCredentials')
-    def updateCredentials(self, request, response, login, new_password):
-        """ Respond to change of credentials (NOOP for basic auth). """
-        print("updateCredentials")
-        # cookie_str = '%s:%s' % (login.encode('hex'), new_password.encode('hex'))
-        cookie_str = b'%s:%s'%(binascii.hexlify(login.encode('utf8')), binascii.hexlify(new_password.encode('utf8')))
-        cookie_val = self.encryptCookie(cookie_str)
-        cookie_val = cookie_val.rstrip()
-        response.setCookie(self.cookie_name, quote(cookie_val), path='/')
 
 
     security.declarePrivate('resetCredentials')
     def resetCredentials(self, request, response):
         """ Raise unauthorized to tell browser to clear credentials. """
-        print("resetCredentials(")
         response.expireCookie(self.cookie_name, path='/')
 
 
     security.declarePrivate('unauthorized')
     def unauthorized(self):
-        print("unauthorized")
         req = self.REQUEST
         resp = req['RESPONSE']
 
@@ -208,35 +195,6 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         return 0
 
 
-    security.declarePublic('login')
-    def login(self):
-        """ Set a cookie and redirect to the url that we tried to
-        authenticate against originally.
-        """
-        print("login")
-        request = self.REQUEST
-        response = request['RESPONSE']
-
-        login = request.get('__ac_name', '')
-        password = request.get('__ac_password', '')
-
-        # In order to use the ZMSPASCookieAuthHelper for its nice login page
-        # facility but store and manage credentials somewhere else we need
-        # to make sure that upon login only plugins activated as
-        # IUpdateCredentialPlugins get their updateCredentials method
-        # called. If the method is called on the ZMSPASCookieAuthHelper it will
-        # simply set its own auth cookie, to the exclusion of any other
-        # plugins that might want to store the credentials.
-        pas_instance = self._getPAS()
-
-        if pas_instance is not None:
-            pas_instance.updateCredentials(request, response, login, password)
-
-        came_from = request.form['came_from']
-
-        return response.redirect(came_from)
-
-
     #
     #    IAuthenticationPlugin implementation
     #
@@ -245,22 +203,108 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
 
         """ See IAuthenticationPlugin.
         """
-        print("authenticateCredentials")
         request = self.REQUEST
         token = request.get(self.cookie_name, '')
         creds = self.decryptCookie(token)
-        user_id = creds['login']
-        info = creds
-        return user_id, info
+        id = creds.get('id',creds.get('login',None))
+        user_name = creds.get('name',id)
+        return (id, user_name)
+
+
+    #
+    #    IRolesPlugin implementation
+    #
+    security.declarePrivate( 'getRolesForPrincipal' )
+    def getRolesForPrincipal( self, principal, request=None):
+        """ See IAuthenticationPlugin.
+        """
+        roles = []
+        token = request.get(self.cookie_name, '')
+        creds = self.decryptCookie(token)
+        id = creds.get('id',creds.get('login',None))
+        user_name = creds.get('name',id)
+        if principal.getId() == id and principal.getUserName() == user_name:
+          roles.extend(creds['roles'])
+        return roles
+
+
+    #
+    #    IUserAdderPlugin implementation
+    #
+    security.declarePrivate( 'doAddUser' )
+    def doAddUser(self, login, password):
+        """ Add a user record to a User Manager, with the given login
+            and password.  It is up to the implementation to determine
+            if the login is used as user id as well.
+
+        o Return a Boolean indicating whether a user was added or not
+        """
+        logins = getattr(self,'_logins',[])
+        if login not in logins:
+          logins.append(login)
+          self._logins = logins
+        return True
+
+
+    #
+    #    IUserEnumerationPlugin implementation
+    #
+    security.declarePrivate( 'doAddUser' )
+    def enumerateUsers(self, id=None, login=None, exact_match=False, sort_by=None,
+                       max_results=None, **kw):
+        """ -> (user_info_1, ... user_info_N)
+
+        o Return mappings for users matching the given criteria.
+
+        o 'id' or 'login', in combination with 'exact_match' true, will
+          return at most one mapping per supplied ID ('id' and 'login'
+          may be sequences).
+
+        o If 'exact_match' is False, then 'id' and / or login may be
+          treated by the plugin as "contains" searches (more complicated
+          searches may be supported by some plugins using other keyword
+          arguments).
+
+        o If 'sort_by' is passed, the results will be sorted accordingly.
+          known valid values are 'id' and 'login' (some plugins may support
+          others).
+
+        o If 'max_results' is specified, it must be a positive integer,
+          limiting the number of returned mappings.  If unspecified, the
+          plugin should return mappings for all users satisfying the criteria.
+
+        o Minimal keys in the returned mappings:
+
+          'id' -- (required) the user ID, which may be different than
+                  the login name
+
+          'login' -- (required) the login name
+
+          'pluginid' -- (required) the plugin ID (as returned by getId())
+
+          'editurl' -- (optional) the URL to a page for updating the
+                       mapping's user
+
+        o Plugin *must* ignore unknown criteria.
+
+        o Plugin may raise ValueError for invalid criteria.
+
+        o Insufficiently-specified criteria may have catastrophic
+          scaling issues for some implementations.
+        """
+        logins = getattr(self,'_logins',[])
+        return [{'id':x,'login':x,'pluginid':self.getId()} for x in logins]
 
 
 classImplements( ZMSPASDangerousCookieAuthPlugin
                , IZMSPASDangerousCookieAuthPlugin
                , ILoginPasswordHostExtractionPlugin
                , IAuthenticationPlugin
+               , IRolesPlugin
                , IChallengePlugin
-               , ICredentialsUpdatePlugin
                , ICredentialsResetPlugin
+               , IUserAdderPlugin
+               , IUserEnumerationPlugin
                )
 
 InitializeClass(ZMSPASDangerousCookieAuthPlugin)

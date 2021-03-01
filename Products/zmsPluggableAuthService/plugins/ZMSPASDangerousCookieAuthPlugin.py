@@ -261,7 +261,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     #
     #    IUserEnumerationPlugin implementation
     #
-    security.declarePrivate( 'doAddUser' )
+    security.declarePrivate( 'enumerateUsers' )
     def enumerateUsers(self, id=None, login=None, exact_match=False, sort_by=None,
                        max_results=None, **kw):
         """ -> (user_info_1, ... user_info_N)

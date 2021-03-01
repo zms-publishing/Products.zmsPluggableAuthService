@@ -32,6 +32,8 @@ from AccessControl.SecurityInfo import ClassSecurityInfo
 from AccessControl.Permissions import view
 from AccessControl.class_init import InitializeClass
 
+from DateTime.DateTime import DateTime
+
 from OFS.Folder import Folder
 from zope.interface import Interface
 
@@ -106,12 +108,12 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
                      + Folder.manage_options[2:]
                      )
 
-    def __init__(self, id, title=None, cookie_name=''):
+    def __init__(self, id, title=None, cookie_name='', cookie_validity=600):
         self._setId(id)
         self.title = title
         self.secret_key = ''
-        if cookie_name:
-            self.cookie_name = cookie_name
+        self.cookie_name = cookie_name
+        self.cookie_validity = int(cookie_validity)
 
 
     def getSecretKey(self):
@@ -208,6 +210,16 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         creds = self.decryptCookie(token)
         id = creds.get('id',creds.get('login',None))
         user_name = creds.get('name',id)
+        # Check valid-until against current timestamp.
+        valid_until = DateTime(creds['valid_until'])
+        if valid_until.timeTime() < DateTime().timeTime():
+            return None
+        # Update valid-until timestamp.
+        creds['valid_until'] = DateTime(DateTime().timeTime()+self.cookie_validity).ISO8601()
+        token = self.encryptCookie(creds)
+        path = self.getPhysicalPath()
+        path = path[:path.index('acl_users')]
+        request.RESPONSE.setCookie(self.cookie_name, token,path='/'.join(path))
         return (id, user_name)
 
 
@@ -224,7 +236,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         id = creds.get('id',creds.get('login',None))
         user_name = creds.get('name',id)
         if principal.getId() == id and principal.getUserName() == user_name:
-          roles.extend(creds['roles'])
+          roles.extend(creds.get('roles',[]))
         return roles
 
 

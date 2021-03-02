@@ -178,9 +178,16 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         return self.unauthorized()
 
 
+    #
+    #    ICredentialsResetPlugin implementation
+    #
     security.declarePrivate('resetCredentials')
     def resetCredentials(self, request, response):
-        """ Raise unauthorized to tell browser to clear credentials. """
+        """ user has logged out.
+        """
+        # Clear Zope-Session.
+        response.expireCookie(_ZopeId, path='/')
+        # Reset Cookie.
         response.expireCookie(self.cookie_name, path='/')
 
 

@@ -60,5 +60,7 @@ ZMS PluggableAuthService Dangerous Cookie Auth Plugin.
   </div>
 </form>
 
+<tal:block tal:content="structure request"></tal:block>
+
 </body>
 </html>

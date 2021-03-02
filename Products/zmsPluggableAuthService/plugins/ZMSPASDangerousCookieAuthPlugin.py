@@ -137,7 +137,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
             path = path[:path.index('acl_users')]
             REQUEST.RESPONSE.setCookie(self.cookie_name, token,path='/'.join(path))
         elif self.cookie_name in REQUEST.cookies:
-            REQUEST.RESPONSE.expireCookie(self.cookie_name)             
+            self.resetCredentials(REQUEST,REQUEST.RESPONSE)
         return REQUEST.RESPONSE.redirect(REQUEST['HTTP_REFERER'])
 
 
@@ -186,7 +186,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         """ user has logged out.
         """
         # Clear Zope-Session.
-        response.expireCookie(_ZopeId, path='/')
+        response.expireCookie("_ZopeId", path='/')
         # Reset Cookie.
         response.expireCookie(self.cookie_name, path='/')
 

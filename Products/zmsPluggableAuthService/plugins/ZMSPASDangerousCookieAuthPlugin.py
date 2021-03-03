@@ -23,10 +23,7 @@ $Id$
 
 import logging
 
-from __future__ import absolute_import
-from __future__ import print_function
 from base64 import encodestring, decodestring
-import binascii
 from binascii import Error
 from six.moves.urllib.parse import quote, unquote
 

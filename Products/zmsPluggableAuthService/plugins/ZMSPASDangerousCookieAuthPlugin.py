@@ -21,6 +21,8 @@
 $Id$
 """
 
+import logging
+
 from __future__ import absolute_import
 from __future__ import print_function
 from base64 import encodestring, decodestring
@@ -50,6 +52,7 @@ from Products.PluggableAuthService.interfaces.plugins import IUserEnumerationPlu
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
 
+logger = logging.getLogger('ZMSPASDangerousCookieAuthPlugin')
 
 class IZMSPASDangerousCookieAuthPlugin(Interface):
     """ Marker interface.
@@ -185,8 +188,28 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     def resetCredentials(self, request, response):
         """ user has logged out.
         """
+        # Hook for custom reset-credentials.
+        try:
+          self.customResetCredentials(request,response)
+        except:
+          logger.debug('can\'t customResetCredentials', exc_info=True)
+
+        # Purge Data of Zope-Session.
+        s = request.SESSION
+        s.invalidate()
+        try:
+          s = self.session_data_manager.getSessionData()
+          s.clear()
+          s.getBrowserIdManager().flushBrowserIdCookie()
+          #for c in request.cookies.keys():
+          #  request.cookies[c]={'value': 'deleted'}
+          #  response.cookies[c]={'value': 'deleted'}        
+        except:
+          logger.debug('can\'t purge Data of Zope-Session', exc_info=True)
+        
         # Clear Zope-Session.
         response.expireCookie("_ZopeId", path='/')
+        
         # Reset Cookie.
         response.expireCookie(self.cookie_name, path='/')
 

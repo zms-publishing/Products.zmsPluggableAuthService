@@ -19,6 +19,7 @@ setup(
         'Products.PluggableAuthService',
         'Zope',
         'cryptography',
+        # 'itsdangerous',
         # 'AccessControl',
         # 'Products.PageTemplates'
         # 'Products.PythonScripts'

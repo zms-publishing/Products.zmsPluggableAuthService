@@ -82,6 +82,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     meta_type = 'ZMS PluggableAuthService Dangerous Cookie Auth Plugin'
     cookie_name = '__ginger_snap'
     security = ClassSecurityInfo()
+    SALT = "zms_auth:login"
 
     mock = PageTemplateFile('www/zpdcapMock', globals())
 
@@ -140,17 +141,17 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
 
 
     def encryptCookie(self, d):
-        from itsdangerous import URLSafeSerializer
-        auth_s = URLSafeSerializer(self.getSecretKey())
-        token = auth_s.dumps(d)
+        from itsdangerous import TimedSerializer
+        coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
+        token = coder.dumps(d)
         return token
 
 
     def decryptCookie(self, token):
         try:
-            from itsdangerous import URLSafeSerializer
-            auth_s = URLSafeSerializer(self.getSecretKey())
-            d = auth_s.loads(token)
+            from itsdangerous import TimedSerializer
+            coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
+            d = coder.loads(token)
             return d
         except:
             return None

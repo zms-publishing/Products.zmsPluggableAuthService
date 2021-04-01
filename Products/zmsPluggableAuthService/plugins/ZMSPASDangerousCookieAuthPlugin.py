@@ -91,7 +91,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
                     , 'mode'  : 'w'
                     }
                   , { 'id'    : 'cookie_name'
-                    , 'label' : 'Cookie Name'
+                    , 'label' : 'Header Name'
                     , 'type'  : 'string'
                     , 'mode'  : 'w'
                     }
@@ -135,9 +135,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         if token:
             path = self.getPhysicalPath()
             path = path[:path.index('acl_users')]
-            REQUEST.RESPONSE.setCookie(self.cookie_name, token,path='/'.join(path))
-        elif self.cookie_name in REQUEST.cookies:
-            self.resetCredentials(REQUEST,REQUEST.RESPONSE)
+            RESPONSE.setHeader(self.cookie_name, token,path='/'.join(path))
         return REQUEST.RESPONSE.redirect(REQUEST['HTTP_REFERER'])
 
 
@@ -162,14 +160,14 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     def extractCredentials(self, request):
         """ Extract credentials from cookie or 'request'. """
         token = request.get(self.cookie_name, '')
-        creds = self.decryptCookie(token)
-        if creds:
-            creds['remote_host'] = request.get('REMOTE_HOST', '')
+        decoded_token = self.decryptCookie(token)
+        if decoded_token:
+            decoded_token['remote_host'] = request.get('REMOTE_HOST', '')
             try:
-                creds['remote_address'] = request.getClientAddr()
+                decoded_token['remote_address'] = request.getClientAddr()
             except AttributeError:
-                creds['remote_address'] = request.get('REMOTE_ADDR', '')
-        return creds
+                decoded_token['remote_address'] = request.get('REMOTE_ADDR', '')
+        return decoded_token
 
 
     security.declarePrivate('challenge')
@@ -206,19 +204,12 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         
         # Clear Zope-Session.
         response.expireCookie("_ZopeId", path='/')
-        
-        # Reset Cookie.
-        response.expireCookie(self.cookie_name, path='/')
 
 
     security.declarePrivate('unauthorized')
     def unauthorized(self):
         req = self.REQUEST
         resp = req['RESPONSE']
-
-        # If we set the auth cookie before, delete it now.
-        if self.cookie_name in resp.cookies:
-            del resp.cookies[self.cookie_name]
 
         # Could not challenge.
         return 0
@@ -234,20 +225,14 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         """
         request = self.REQUEST
         token = request.get(self.cookie_name, '')
-        creds = self.decryptCookie(token)
-        id = creds.get('id',creds.get('login',None))
-        user_name = creds.get('name',id)
+        decoded_token = self.decryptCookie(token)
+        username = decoded_token['preferred_username'].split('@')[0]
         # Check valid-until against current timestamp.
-        valid_until = DateTime(creds['valid_until'])
-        if valid_until.timeTime() < DateTime().timeTime():
-            return None
-        # Update valid-until timestamp.
-        creds['valid_until'] = DateTime(DateTime().timeTime()+self.cookie_validity).ISO8601()
-        token = self.encryptCookie(creds)
-        path = self.getPhysicalPath()
-        path = path[:path.index('acl_users')]
-        request.RESPONSE.setCookie(self.cookie_name, token,path='/'.join(path))
-        return (id, user_name)
+        if 'valid_until' in decoded_token:
+          valid_until = DateTime(creds['valid_until'])
+          if valid_until.timeTime() < DateTime().timeTime():
+              return None
+        return (username, username)
 
 
     #
@@ -259,11 +244,10 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         """
         roles = []
         token = request.get(self.cookie_name, '')
-        creds = self.decryptCookie(token)
-        id = creds.get('id',creds.get('login',None))
-        user_name = creds.get('name',id)
-        if principal.getId() == id and principal.getUserName() == user_name:
-          roles.extend(creds.get('roles',[]))
+        decoded_token = self.decryptCookie(token)
+        username = decoded_token['preferred_username'].split('@')[0]
+        if principal.getId() == username and principal.getUserName() == username:
+          roles.extend(decoded_token.get('roles',[]))
         return roles
 
 

@@ -140,7 +140,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         return token
 
 
-    def decryptCookie(self, token):
+    def decryptCookie(self, token, debug=False):
         try:
             from itsdangerous import TimedSerializer
             coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
@@ -151,12 +151,15 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         except:
             import sys, traceback, string
             type, val, tb = sys.exc_info()
-            sys.stderr.write(''.join(traceback.format_exception(type, val, tb)))
+            msg = ''.join(traceback.format_exception(type, val, tb))
+            sys.stderr.write(msg)
             del type, val, tb
-            return None
+            if debug:
+              return msg
+        return None
 
 
-    #security.declarePrivate('extractCredentials')
+    security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
         """ Extract credentials from cookie or 'request'. """
         token = request.get(self.cookie_name, '')

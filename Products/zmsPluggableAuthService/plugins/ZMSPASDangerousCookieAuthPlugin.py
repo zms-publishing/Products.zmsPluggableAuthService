@@ -133,22 +133,6 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         return self.secret_key
         
     
-    def mockCookie(self, REQUEST):
-        """ mockCookie """
-        token = None
-        if REQUEST.has_key('d'):
-          d = REQUEST.get('d','').strip()
-          if d.startswith('{') and d.endswith('}'):
-            d = eval('(%s)'%d)
-            if type(d) is dict:
-              token = self.encryptCookie(d)
-        if token:
-            path = self.getPhysicalPath()
-            path = path[:path.index('acl_users')]
-            RESPONSE.setHeader(self.cookie_name, token,path='/'.join(path))
-        return REQUEST.RESPONSE.redirect(REQUEST['HTTP_REFERER'])
-
-
     def encryptCookie(self, d):
         from itsdangerous import TimedSerializer
         coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
@@ -160,9 +144,15 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         try:
             from itsdangerous import TimedSerializer
             coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
+            if isinstance(token,str):
+              token = bytes(token,'utf-8')
             d = coder.loads(token)
             return d
         except:
+            import sys, traceback, string
+            type, val, tb = sys.exc_info()
+            sys.stderr.write(''.join(traceback.format_exception(type, val, tb)))
+            del type, val, tb
             return None
 
 

@@ -8,10 +8,14 @@
 ZMS PluggableAuthService Dangerous Cookie Auth Plugin.
 </p>
 
-<form action="mockCookie" method="post" enctype="multipart/form-data" tal:define="
-        cookie_value python:request.get(here.cookie_name,None);
-        d python:here.decryptCookie(cookie_value);
-        default_value python:{'user_id': 'foo', 'service': 'bar', 'preferred_username': 'baz@example.org', 'valid_until': DateTime(DateTime().timeTime()+here.cookie_validity).ISO8601()}">
+<form method="post" enctype="multipart/form-data" tal:define="
+        default_value python:{'user_id': 'foo', 'service': 'bar', 'preferred_username': 'baz@example.org'};
+        default_value python:here.encryptCookie(default_value);
+        cookie_value default_value;
+        cookie_value python:request.get(here.cookie_name) if request.get(here.cookie_name) else cookie_value;
+        cookie_value python:request.get('cookie_value') if request.get('cookie_value') else cookie_value;
+        d python:here.decryptCookie(cookie_value);">
+
   <div class="form-group row">
     <label for="cookie_name" class="form-label col-sm-3 col-md-2">Cookie-Name</label>
     <div class="col-sm-9 col-md-10">
@@ -21,13 +25,13 @@ ZMS PluggableAuthService Dangerous Cookie Auth Plugin.
   <div class="form-group row">
     <label for="cookie_value" class="form-label col-sm-3 col-md-2">Cookie-Value</label>
     <div class="col-sm-9 col-md-10">
-      <input class="form-control" type="text" name="cookie_value" size="40" disabled="disabled" tal:attributes="value cookie_value"/>
+      <textarea class="form-control" name="cookie_value" tal:content="cookie_value"></textarea>
     </div>
   </div>
   <div class="form-group row">
-    <label for="d" class="form-label col-sm-3 col-md-2">Dict</label>
+    <label for="cookie_value" class="form-label col-sm-3 col-md-2">Decrypted</label>
     <div class="col-sm-9 col-md-10">
-      <textarea class="form-control" name="d"><tal:block tal:condition="d" tal:content="d"></tal:block><tal:block tal:condition="not:d" tal:content="default_value"></tal:block></textarea>
+      <textarea class="form-control" tal:content="d"></textarea>
     </div>
   </div>
   <div class="form-group row">

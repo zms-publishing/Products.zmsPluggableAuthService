@@ -109,6 +109,15 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
                      + Folder.manage_options[2:]
                      )
 
+    # Management Permissions.
+    # -----------------------
+    __viewPermissions__ = (
+      'manage_page_header', 'manage_page_footer', 'manage_tabs'
+      )
+    __ac_permissions__=(
+      ('View', __viewPermissions__),
+      )
+
     def __init__(self, id, title=None, cookie_name='', cookie_validity=600):
         self._setId(id)
         self.title = title

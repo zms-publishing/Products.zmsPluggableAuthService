@@ -156,7 +156,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
             return None
 
 
-    security.declarePrivate('extractCredentials')
+    #security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
         """ Extract credentials from cookie or 'request'. """
         token = request.get(self.cookie_name, '')
@@ -220,7 +220,6 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     #
     security.declarePrivate( 'authenticateCredentials' )
     def authenticateCredentials( self, credentials, request=None ):
-
         """ See IAuthenticationPlugin.
         """
         request = self.REQUEST
@@ -240,7 +239,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     #
     security.declarePrivate( 'getRolesForPrincipal' )
     def getRolesForPrincipal( self, principal, request=None):
-        """ See IAuthenticationPlugin.
+        """ See IRolesPlugin.
         """
         roles = []
         token = request.get(self.cookie_name, '')

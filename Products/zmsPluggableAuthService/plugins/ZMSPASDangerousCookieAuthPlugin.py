@@ -80,6 +80,8 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
     """ Multi-plugin for managing details of Dangerouse Cookie Authentication. """
 
     meta_type = 'ZMS PluggableAuthService Dangerous Cookie Auth Plugin'
+    zmi_icon = 'fas fa-cookie-bite text-danger'
+    zmi_show_add_dialog = True
     cookie_name = '__ginger_snap'
     security = ClassSecurityInfo()
     SALT = "zms_auth:login"

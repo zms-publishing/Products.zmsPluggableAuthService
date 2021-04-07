@@ -68,6 +68,7 @@ class ZMSPASRolePlugin( Folder, BasePlugin ):
     """
 
     meta_type = 'ZMS PluggableAuthService Role Plugin'
+    zmi_icon = 'fas fa-user-tag'
     security = ClassSecurityInfo()
 
     manage_options = ( BasePlugin.manage_options[:1]

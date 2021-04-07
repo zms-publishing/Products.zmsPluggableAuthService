@@ -101,6 +101,7 @@ class ZMSPASUserPlugin( Folder, BasePlugin ):
     """
 
     meta_type = 'ZMS PluggableAuthService User Plugin'
+    zmi_icon = 'fas fa-user'
     security = ClassSecurityInfo()
 
     manage_options = ( BasePlugin.manage_options[:1]

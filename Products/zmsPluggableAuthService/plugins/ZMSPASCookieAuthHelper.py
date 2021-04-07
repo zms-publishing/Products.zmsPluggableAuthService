@@ -75,6 +75,8 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
     """ Multi-plugin for managing details of Cookie Authentication. """
 
     meta_type = 'ZMS PluggableAuthService Cookie Auth Helper'
+    zmi_icon = 'fas fa-cookie-bite'
+    zmi_show_add_dialog = True
     cookie_name = '__ginger_snap'
     login_path = 'login_form'
     security = ClassSecurityInfo()

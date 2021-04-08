@@ -225,21 +225,20 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
 
     security.declarePrivate('unauthorized')
     def unauthorized(self):
-        req = self.REQUEST
-        resp = req['RESPONSE']
+        request = self.REQUEST
+        resp = request['RESPONSE']
 
-        # If we set the auth cookie before, delete it now.
-        if self.cookie_name in resp.cookies:
-            del resp.cookies[self.cookie_name]
+        token = request.get(self.cookie_name, '')
+        decoded_token = self.decryptCookie(token)
 
         # Redirect if desired.
         url = self.getLoginURL()
-        if url is not None:
-            came_from = req.get('came_from', None)
+        if decoded_token is None and url is not None:
+            came_from = request.get('came_from', None)
 
             if came_from is None:
-                came_from = req.get('ACTUAL_URL', '')
-                query = req.get('QUERY_STRING')
+                came_from = request.get('ACTUAL_URL', '')
+                query = request.get('QUERY_STRING')
                 if query:
                     if not query.startswith('?'):
                         query = '?' + query
@@ -249,7 +248,7 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
                 # must be coming through here a second time
                 # Reasons could be typos when providing credentials
                 # or a redirect loop (see below)
-                req_url = req.get('ACTUAL_URL', '')
+                req_url = request.get('ACTUAL_URL', '')
 
                 if req_url and req_url == url:
                     # Oops... The login_form cannot be reached by the user -

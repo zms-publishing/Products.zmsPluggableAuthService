@@ -102,6 +102,18 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
                     , 'mode'   : 'w'
                     , 'default': ''
                     }
+                  , { 'id'     : 'login_path'
+                    , 'label'  : 'Login Path'
+                    , 'type'   : 'string'
+                    , 'mode'   : 'w'
+                    , 'default': 'http://zms.hosting/auth/login'
+                    }
+                  , { 'id'     : 'came_from'
+                    , 'label'  : 'Came From'
+                    , 'type'   : 'string'
+                    , 'mode'   : 'w'
+                    , 'default': 'came_from'
+                    }
                   )
 
     manage_options = ( BasePlugin.manage_options[:1]
@@ -214,8 +226,59 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         req = self.REQUEST
         resp = req['RESPONSE']
 
+        # If we set the auth cookie before, delete it now.
+        if self.cookie_name in resp.cookies:
+            del resp.cookies[self.cookie_name]
+
+        # Redirect if desired.
+        url = self.getLoginURL()
+        if url is not None:
+            came_from = req.get('came_from', None)
+
+            if came_from is None:
+                came_from = req.get('ACTUAL_URL', '')
+                query = req.get('QUERY_STRING')
+                if query:
+                    if not query.startswith('?'):
+                        query = '?' + query
+                    came_from = came_from + query
+            else:
+                # If came_from contains a value it means the user
+                # must be coming through here a second time
+                # Reasons could be typos when providing credentials
+                # or a redirect loop (see below)
+                req_url = req.get('ACTUAL_URL', '')
+
+                if req_url and req_url == url:
+                    # Oops... The login_form cannot be reached by the user -
+                    # it might be protected itself due to misconfiguration -
+                    # the only sane thing to do is to give up because we are
+                    # in an endless redirect loop.
+                    return 0
+
+            if '?' in url:
+                sep = '&'
+            else:
+                sep = '?'
+            url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
+            resp.redirect(url, lock=1)
+            resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
+            resp.setHeader('Cache-Control', 'no-cache')
+            return 1
+
         # Could not challenge.
         return 0
+
+
+    security.declarePrivate('getLoginURL')
+    def getLoginURL(self):
+        """ Where to send people for logging in """
+        if self.login_path.startswith('/') or '://' in self.login_path:
+            return self.login_path
+        elif self.login_path != '':
+            return '%s/%s' % (self.absolute_url(), self.login_path)
+        else:
+            return None
 
 
     #

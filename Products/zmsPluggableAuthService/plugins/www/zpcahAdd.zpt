@@ -3,7 +3,7 @@
 
 <main class="container-fluid">
 	<h2 tal:define="form_title string:Add a ZMS PluggableAuthService Cookie Auth Helper"
-	tal:replace="structure here/manage_form_title">Form Title</h2>
+		tal:replace="structure here/manage_form_title">Form Title</h2>
 	<!-- <p class="form-help mt-4">ZMS PluggableAuthService Cookie Auth Helper.</p> -->
 	<form action="addZMSPASCookieAuthHelper" method="post" enctype="multipart/form-data">
 

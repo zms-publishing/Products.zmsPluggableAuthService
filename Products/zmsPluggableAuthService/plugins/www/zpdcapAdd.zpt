@@ -1,45 +1,47 @@
 <h1 tal:replace="structure here/manage_page_header">Header</h1>
 <h1 tal:replace="structure here/manage_tabs">Tabs</h1>
 
-<h2 tal:define="form_title string:Add a ZMS PluggableAuthService Dangerous Cookie Auth Plugin"
-    tal:replace="structure here/manage_form_title">Form Title</h2>
+<main class="container-fluid">
+	<h2 tal:define="form_title string:Add a ZMS PluggableAuthService Dangerous Cookie Auth Plugin"
+		tal:replace="structure here/manage_form_title">Form Title</h2>
+	<!-- <p class="form-help"> ZMS PluggableAuthService Dangerous Cookie Auth Plugin.</p> -->
 
-<p class="form-help"> 
-ZMS PluggableAuthService Dangerous Cookie Auth Plugin.
-</p>
+	<form action="addZMSPASDangerousCookieAuthPlugin" method="post" enctype="multipart/form-data">
 
-<form action="addZMSPASDangerousCookieAuthPlugin" method="post" 
- enctype="multipart/form-data">
-  <div class="form-group row">
-    <label for="id" class="form-label col-sm-3 col-md-2">Id</label>
-    <div class="col-sm-9 col-md-10">
-      <input type="text" name="id" size="40" />
-    </div>
-  </div>
-  <div class="form-group row">
-    <label for="title" class="form-label col-sm-3 col-md-2">Title</label>
-    <div class="col-sm-9 col-md-10">
-      <input type="text" name="title" size="40" />
-    </div>
-  </div>
-  <div class="form-group row">
-    <label for="cookie_name" class="form-label col-sm-3 col-md-2">Header-Name</label>
-    <div class="col-sm-9 col-md-10">
-      <input type="text" name="cookie_name" size="40" value="HTTP_X_AUTH_RESULT"/>
-    </div>
-  </div>
-  <div class="form-group row">
-    <label for="cookie_validity" class="form-label col-sm-3 col-md-2">Cookie-Validity [secs.]</label>
-    <div class="col-sm-9 col-md-10">
-      <input type="text" name="cookie_validity" size="40" value="600"/>
-    </div>
-  </div>
-  <div class="form-group row">
-    <label class="form-label col-sm-3 col-md-2"></label>
-    <div class="col-sm-9 col-md-10">
-      <input class="form-element" type="submit" name="submit" value=" Add " /> 
-    </div>
-  </div>
-</form>
+		<div class="form-group row">
+			<label for="id" class="form-label col-sm-3 col-md-2">Id</label>
+			<div class="col-sm-9 col-md-10">
+				<input id="id" name="id" class="form-control" type="text" />
+			</div>
+		</div>
 
-<h1 tal:replace="structure here/manage_page_footer">Footer</h1>
+		<div class="form-group row">
+			<label for="title" class="form-label col-sm-3 col-md-2">Title</label>
+			<div class="col-sm-9 col-md-10">
+				<input id="title" name="title" class="form-control" type="text" />
+			</div>
+		</div>
+
+		<div class="form-group row">
+			<label for="cookie_name" class="form-label col-sm-3 col-md-2">Header-Name</label>
+			<div class="col-sm-9 col-md-10">
+				<input id="cookie_name" name="cookie_name" class="form-control text-monospace" type="text" value="HTTP_X_AUTH_RESULT" />
+			</div>
+		</div>
+
+		<div class="form-group row">
+			<label for="cookie_validity" class="form-label col-sm-3 col-md-2">Cookie-Validity [secs.]</label>
+			<div class="col-sm-9 col-md-10">
+				<input id="cookie_validity" name="cookie_validity" class="form-control" type="number" value="600" />
+			</div>
+		</div>
+
+		<div class="zmi-controls">
+			<input class="btn btn-primary" type="submit" name="submit" value="Add" />
+		</div>
+
+	</form>
+
+</main>
+
+<tal:block tal:replace="structure here/manage_page_footer">Footer</tal:block>

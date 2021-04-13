@@ -1,10 +1,10 @@
-<h1 tal:replace="structure here/manage_page_header">Header</h1>
-<h1 tal:replace="structure here/manage_tabs">Tabs</h1>
+<tal:block tal:replace="structure here/manage_page_header">Header</tal:block>
+<!-- tal:block tal:replace="structure here/manage_tabs">Tabs</tal:block -->
 
 <main class="container-fluid">
 	<h2 tal:define="form_title string:Add a ZMS PluggableAuthService Role Plugin"
 		tal:replace="structure here/manage_form_title">Form Title</h2>
-	<!-- <p class="form-help">ZMS PluggableAuthService Role Plugin.</p> -->
+		<!-- <p class="form-help">ZMS PluggableAuthService Role Plugin.</p> -->
 
 	<form action="addZMSPASRolePlugin" method="post" enctype="multipart/form-data">
 
@@ -15,7 +15,7 @@
 			</div>
 		</div>
 
-		<div class="form-group row">
+		<div class="form-group row form-optional">
 			<label for="title" class="form-label col-sm-3 col-md-2">Title</label>
 			<div class="col-sm-9 col-md-10">
 				<input id="title" name="title" class="form-control" type="text" />

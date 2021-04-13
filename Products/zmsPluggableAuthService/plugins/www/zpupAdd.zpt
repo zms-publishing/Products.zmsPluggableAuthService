@@ -1,5 +1,5 @@
-<h1 tal:replace="structure here/manage_page_header">Header</h1>
-<h1 tal:replace="structure here/manage_tabs">Tabs</h1>
+<tal:block tal:replace="structure here/manage_page_header">Header</tal:block>
+<!-- tal:block tal:replace="structure here/manage_tabs">Tabs</tal:block -->
 
 <main class="container-fluid">
 	<h2 tal:define="form_title string:Add a ZMS PluggableAuthService User Plugin"

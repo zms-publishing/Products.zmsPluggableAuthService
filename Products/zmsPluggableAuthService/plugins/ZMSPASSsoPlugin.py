@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- 
 ################################################################################
-# ZMSPASDangerousCookieAuthPlugin.py
+# ZMSPASSsoPlugin.py
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ################################################################################
-""" Class: ZMSPASDangerousCookieAuthPlugin
+""" Class: ZMSPASSsoPlugin
 
 $Id$
 """
@@ -49,40 +49,41 @@ from Products.PluggableAuthService.interfaces.plugins import IUserEnumerationPlu
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
 
-logger = logging.getLogger('ZMSPASDangerousCookieAuthPlugin')
+logger = logging.getLogger('ZMSPASSsoPlugin')
 
-class IZMSPASDangerousCookieAuthPlugin(Interface):
+class IZMSPASSsoPlugin(Interface):
     """ Marker interface.
     """
 
-manage_addZMSPASDangerousCookieAuthPluginForm = PageTemplateFile(
-    'www/zpdcapAdd', globals(), __name__='manage_addZMSPASDangerousCookieAuthPluginForm')
+manage_addZMSPASSsoPluginForm = PageTemplateFile(
+    'www/zpdcapAdd', globals(), __name__='manage_addZMSPASSsoPluginForm')
 
 
-def addZMSPASDangerousCookieAuthPlugin( dispatcher
+def addZMSPASSsoPlugin( dispatcher
                        , id
                        , title=None
-                       , cookie_name=''
+                       , header_name=''
+                       , login_path=''
                        , REQUEST=None
                        ):
-    """ Add a Dangerous Cookie Auth Plugin to a Pluggable Auth Service. """
-    sp = ZMSPASDangerousCookieAuthPlugin(id, title, cookie_name)
+    """ Add a SSO Plugin to a Pluggable Auth Service. """
+    sp = ZMSPASSsoPlugin(id, title, header_name, login_path)
     dispatcher._setObject(sp.getId(), sp)
 
     if REQUEST is not None:
         REQUEST['RESPONSE'].redirect( '%s/manage_workspace'
                                       '?manage_tabs_message='
-                                      'ZMSPASDangerousCookieAuthPluginr+added.'
+                                      'ZMSPASSsoPluginr+added.'
                                     % dispatcher.absolute_url() )
 
 
-class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
-    """ Multi-plugin for managing details of Dangerouse Cookie Authentication. """
+class ZMSPASSsoPlugin(Folder, BasePlugin):
+    """ Multi-plugin for managing details of SSO Authentication. """
 
-    meta_type = 'ZMS PluggableAuthService Dangerous Cookie Auth Plugin'
+    meta_type = 'ZMS PluggableAuthService SSO Plugin'
     zmi_icon = 'fas fa-cookie-bite text-danger'
     zmi_show_add_dialog = True
-    cookie_name = '__ginger_snap'
+    header_name = '__ginger_snap'
     security = ClassSecurityInfo()
     SALT = "zms_auth:login"
 
@@ -93,10 +94,11 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
                     , 'type'  : 'string'
                     , 'mode'  : 'w'
                     }
-                  , { 'id'    : 'cookie_name'
+                  , { 'id'    : 'header_name'
                     , 'label' : 'Header Name'
                     , 'type'  : 'string'
                     , 'mode'  : 'w'
+                    , 'default': 'HTTP_X_AUTH_RESULT'
                     }
                   , { 'id'     : 'secret_key'
                     , 'label'  : 'Secret Key'
@@ -132,12 +134,13 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
       ('View', __viewPermissions__),
       )
 
-    def __init__(self, id, title=None, cookie_name='', cookie_validity=600):
+    def __init__(self, id, title=None, header_name='HTTP_X_AUTH_RESULT', login_path='http://zms.hosting/auth/login'):
         self._setId(id)
         self.title = title
         self.secret_key = ''
-        self.cookie_name = cookie_name
-        self.cookie_validity = int(cookie_validity)
+        self.header_name = header_name
+        self.login_path = login_path
+        self.came_from = 'came_from'
 
 
     def getSecretKey(self):
@@ -147,14 +150,14 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         return self.secret_key
         
     
-    def encryptCookie(self, d):
+    def encryptToken(self, d):
         from itsdangerous import TimedSerializer
         coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
         token = coder.dumps(d)
         return token
 
 
-    def decryptCookie(self, token, debug=False):
+    def decryptToken(self, token, debug=False):
         try:
             from itsdangerous import TimedSerializer
             coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
@@ -175,9 +178,9 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
 
     security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
-        """ Extract credentials from cookie or 'request'. """
-        token = request.get(self.cookie_name, '')
-        decoded_token = self.decryptCookie(token)
+        """ Extract credentials from request. """
+        token = request.get(self.header_name, '')
+        decoded_token = self.decryptToken(token)
         if decoded_token:
             decoded_token['remote_host'] = request.get('REMOTE_HOST', '')
             try:
@@ -213,9 +216,6 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
           s = self.session_data_manager.getSessionData()
           s.clear()
           s.getBrowserIdManager().flushBrowserIdCookie()
-          #for c in request.cookies.keys():
-          #  request.cookies[c]={'value': 'deleted'}
-          #  response.cookies[c]={'value': 'deleted'}        
         except:
           logger.debug('can\'t purge Data of Zope-Session', exc_info=True)
         
@@ -228,12 +228,9 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         request = self.REQUEST
         resp = request['RESPONSE']
 
-        token = request.get(self.cookie_name, '')
-        decoded_token = self.decryptCookie(token)
-
         # Redirect if desired.
         url = self.getLoginURL()
-        if decoded_token is None and url is not None:
+        if url is not None:
             came_from = request.get('came_from', None)
 
             if came_from is None:
@@ -261,11 +258,15 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
                 sep = '&'
             else:
                 sep = '?'
-            url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
-            resp.redirect(url, lock=1)
-            resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
-            resp.setHeader('Cache-Control', 'no-cache')
-            return 1
+
+            token = request.get(self.header_name, '')
+            decoded_token = self.decryptToken(token)
+            if decoded_token is None:
+                url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
+                resp.redirect(url, lock=1)
+                resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
+                resp.setHeader('Cache-Control', 'no-cache')
+                return 1
 
         # Could not challenge.
         return 0
@@ -290,8 +291,8 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         """ See IAuthenticationPlugin.
         """
         request = self.REQUEST
-        token = request.get(self.cookie_name, '')
-        decoded_token = self.decryptCookie(token)
+        token = request.get(self.header_name, '')
+        decoded_token = self.decryptToken(token)
         username = decoded_token['preferred_username'].split('@')[0]
         # Check valid-until against current timestamp.
         if 'valid_until' in decoded_token:
@@ -309,8 +310,8 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         """ See IRolesPlugin.
         """
         roles = []
-        token = request.get(self.cookie_name, '')
-        decoded_token = self.decryptCookie(token)
+        token = request.get(self.header_name, '')
+        decoded_token = self.decryptToken(token)
         username = decoded_token['preferred_username'].split('@')[0]
         if principal.getId() == username and principal.getUserName() == username:
           roles.extend(decoded_token.get('roles',[]))
@@ -385,8 +386,8 @@ class ZMSPASDangerousCookieAuthPlugin(Folder, BasePlugin):
         return [{'id':x,'login':x,'pluginid':self.getId()} for x in logins]
 
 
-classImplements( ZMSPASDangerousCookieAuthPlugin
-               , IZMSPASDangerousCookieAuthPlugin
+classImplements( ZMSPASSsoPlugin
+               , IZMSPASSsoPlugin
                , ILoginPasswordHostExtractionPlugin
                , IAuthenticationPlugin
                , IRolesPlugin
@@ -396,4 +397,4 @@ classImplements( ZMSPASDangerousCookieAuthPlugin
                , IUserEnumerationPlugin
                )
 
-InitializeClass(ZMSPASDangerousCookieAuthPlugin)
+InitializeClass(ZMSPASSsoPlugin)

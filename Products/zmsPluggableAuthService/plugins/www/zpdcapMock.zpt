@@ -2,37 +2,37 @@
 <h1 tal:replace="structure here/manage_tabs">Tabs</h1>
 
 <main class="container-fluid">
-	<h2 tal:define="form_title string:Mock a ZMS PluggableAuthService Dangerous Cookie"
+	<h2 tal:define="form_title string:Mock a ZMS PluggableAuthService SSO"
 		tal:replace="structure here/manage_form_title">Form Title</h2>
-		<!-- <p class="form-help">ZMS PluggableAuthService Dangerous Cookie Auth Plugin.</p> -->
+		<!-- <p class="form-help">ZMS PluggableAuthService SSO Plugin.</p> -->
 	<form method="post" enctype="multipart/form-data" tal:define="
 			default_value python:{'user_id': 'foo', 'service': 'bar', 'preferred_username': 'baz@example.org'};
-			default_value python:here.encryptCookie(default_value);
-			cookie_value default_value;
-			cookie_value python:request.get(here.cookie_name) if request.get(here.cookie_name) else cookie_value;
-			cookie_value python:request.get('cookie_value') if request.get('cookie_value') else cookie_value;
-			d python:here.decryptCookie(cookie_value);">
+			default_value python:here.encryptToken(default_value);
+			header_value default_value;
+			header_value python:request.get(here.header_name) if request.get(here.header_name) else header_value;
+			header_value python:request.get('header_value') if request.get('header_value') else header_value;
+			d python:here.decryptToken(header_value);">
 
 		<div class="form-group row">
 			<label for="debug" class="form-label col-sm-3 col-md-2">Debug</label>
 			<div class="col-sm-9 col-md-10">
-				<textarea class="form-control text-monospace text-secondary" name="debug" disabled="disabled" tal:content="python:here.decryptCookie(cookie_value,debug=True)"></textarea>
+				<textarea class="form-control text-monospace text-secondary" name="debug" disabled="disabled" tal:content="python:here.decryptToken(header_value,debug=True)"></textarea>
 			</div>
 		</div>
 		<div class="form-group row">
-			<label for="cookie_name" class="form-label col-sm-3 col-md-2">Cookie-Name</label>
+			<label for="header_name" class="form-label col-sm-3 col-md-2">Header-Name</label>
 			<div class="col-sm-9 col-md-10">
-				<input class="form-control text-monospace text-secondary" type="text" name="cookie_name" size="40" disabled="disabled" tal:attributes="value python:here.cookie_name"/>
+				<input class="form-control text-monospace text-secondary" type="text" name="header_name" size="40" disabled="disabled" tal:attributes="value python:here.header_name"/>
 			</div>
 		</div>
 		<div class="form-group row">
-			<label for="cookie_value" class="form-label col-sm-3 col-md-2">Cookie-Value</label>
+			<label for="header_value" class="form-label col-sm-3 col-md-2">Header-Value</label>
 			<div class="col-sm-9 col-md-10">
-				<textarea class="form-control text-monospace" name="cookie_value" tal:content="cookie_value"></textarea>
+				<textarea class="form-control text-monospace" name="header_value" tal:content="header_value"></textarea>
 			</div>
 		</div>
 		<div class="form-group row">
-			<label for="cookie_value" class="form-label col-sm-3 col-md-2">Decrypted</label>
+			<label for="header_value" class="form-label col-sm-3 col-md-2">Decrypted</label>
 			<div class="col-sm-9 col-md-10">
 				<textarea class="form-control text-monospace" tal:content="d"></textarea>
 			</div>

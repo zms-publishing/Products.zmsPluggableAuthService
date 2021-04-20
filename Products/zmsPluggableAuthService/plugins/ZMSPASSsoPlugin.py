@@ -211,7 +211,11 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
 
         # Purge Data of Zope-Session.
         s = request.SESSION
-        s.invalidate()
+        try:
+          # using tempstorage
+          s.invalidate()
+        except:
+          pass
         try:
           s = self.session_data_manager.getSessionData()
           s.clear()

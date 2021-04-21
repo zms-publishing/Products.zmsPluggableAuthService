@@ -211,11 +211,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
 
         # Purge Data of Zope-Session.
         s = request.SESSION
-        try:
-          # using tempstorage
-          s.invalidate()
-        except:
-          pass
+        s.invalidate()
         try:
           s = self.session_data_manager.getSessionData()
           s.clear()
@@ -267,10 +263,13 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
             decoded_token = self.decryptToken(token)
             if decoded_token is None:
                 url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
-                resp.redirect(url, lock=1)
-                resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
-                resp.setHeader('Cache-Control', 'no-cache')
-                return 1
+            else:
+                url = '%s/unauthorized_html'%self.absolute_url()
+                url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
+            resp.redirect(url, lock=1)
+            resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
+            resp.setHeader('Cache-Control', 'no-cache')
+            return 1
 
         # Could not challenge.
         return 0

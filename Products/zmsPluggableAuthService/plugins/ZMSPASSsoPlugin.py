@@ -242,7 +242,6 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                 sep = '?'
 
             token = request.get(self.header_name, '')
-            print('HTTP_REFERER',request.get('HTTP_REFERER'))
             if not token:
                 url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
                 resp.redirect(url, lock=1)
@@ -302,14 +301,14 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         request = self.REQUEST
         token = request.get(self.header_name, '')
         decoded_token = self.decryptToken(token)
-        username = decoded_token['preferred_username'].split('@')[0]
+        username = decoded_token.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in decoded_token else decoded_token.get('preferred_username','').split('@')[0]
         return (username, username)
 
 
     #
     #    IUserAdderPlugin implementation
     #
-    security.declarePrivate( 'doAddUser' )
+    #--security.declarePrivate( 'doAddUser' )
     def doAddUser(self, login, password):
         """ Add a user record to a User Manager, with the given login
             and password.  It is up to the implementation to determine
@@ -317,17 +316,19 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
 
         o Return a Boolean indicating whether a user was added or not
         """
-        logins = getattr(self,'_logins',[])
-        if login not in logins:
-          logins.append(login)
-          self._logins = logins
+        token = request.get(self.header_name, '')
+        decoded_token = self.decryptToken(token)
+        if decoded_token:
+          user_id = decoded_token['user_id']
+          users = getattr(self,'_users',{})
+          users[user_id] = decoded_token
         return True
 
 
     #
     #    IUserEnumerationPlugin implementation
     #
-    security.declarePrivate( 'enumerateUsers' )
+    #--security.declarePrivate( 'enumerateUsers' )
     def enumerateUsers(self, id=None, login=None, exact_match=False, sort_by=None,
                        max_results=None, **kw):
         """ -> (user_info_1, ... user_info_N)
@@ -370,8 +371,8 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         o Insufficiently-specified criteria may have catastrophic
           scaling issues for some implementations.
         """
-        logins = getattr(self,'_logins',[])
-        return [{'id':x,'login':x,'pluginid':self.getId()} for x in logins]
+        users = getattr(self,'_users',{})
+        return [{'id':x['user_id'],'login':x.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in x else x.get('preferred_username','').split('@')[0],'pluginid':self.getId()} for x in users.values()]
 
 
 classImplements( ZMSPASSsoPlugin

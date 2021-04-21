@@ -41,7 +41,6 @@ from Products.PageTemplates.ZopePageTemplate import ZopePageTemplate
 
 from Products.PluggableAuthService.interfaces.plugins import ILoginPasswordHostExtractionPlugin
 from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
-from Products.PluggableAuthService.interfaces.plugins import IRolesPlugin
 from Products.PluggableAuthService.interfaces.plugins import IChallengePlugin
 from Products.PluggableAuthService.interfaces.plugins import ICredentialsResetPlugin
 from Products.PluggableAuthService.interfaces.plugins import IUserAdderPlugin
@@ -169,9 +168,9 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
             import sys, traceback, string
             type, val, tb = sys.exc_info()
             msg = ''.join(traceback.format_exception(type, val, tb))
-            sys.stderr.write(msg)
             del type, val, tb
             if debug:
+              sys.stderr.write(msg)
               return msg
         return None
 
@@ -192,39 +191,22 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
 
     security.declarePrivate('challenge')
     def challenge(self, request, response, **kw):
-        """ Challenge the user for credentials. """
-        return self.unauthorized()
+        """ Assert via the response that credentials will be gathered.
 
+        Takes a REQUEST object and a RESPONSE object.
 
-    #
-    #    ICredentialsResetPlugin implementation
-    #
-    security.declarePrivate('resetCredentials')
-    def resetCredentials(self, request, response):
-        """ user has logged out.
+        Returns True if it fired, False otherwise.
+
+        Two common ways to initiate a challenge:
+
+          - Add a 'WWW-Authenticate' header to the response object.
+
+            NOTE: add, since the HTTP spec specifically allows for
+            more than one challenge in a given response.
+
+          - Cause the response object to redirect to another URL (a
+            login form page, for instance)
         """
-        # Hook for custom reset-credentials.
-        try:
-          self.customResetCredentials(request,response)
-        except:
-          logger.debug('can\'t customResetCredentials', exc_info=True)
-
-        # Purge Data of Zope-Session.
-        s = request.SESSION
-        s.invalidate()
-        try:
-          s = self.session_data_manager.getSessionData()
-          s.clear()
-          s.getBrowserIdManager().flushBrowserIdCookie()
-        except:
-          logger.debug('can\'t purge Data of Zope-Session', exc_info=True)
-        
-        # Clear Zope-Session.
-        response.expireCookie("_ZopeId", path='/')
-
-
-    security.declarePrivate('unauthorized')
-    def unauthorized(self):
         request = self.REQUEST
         resp = request['RESPONSE']
 
@@ -260,19 +242,43 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                 sep = '?'
 
             token = request.get(self.header_name, '')
-            decoded_token = self.decryptToken(token)
-            if decoded_token is None:
+            print('HTTP_REFERER',request.get('HTTP_REFERER'))
+            if not token:
                 url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
-            else:
-                url = '%s/unauthorized_html'%self.absolute_url()
-                url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
-            resp.redirect(url, lock=1)
-            resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
-            resp.setHeader('Cache-Control', 'no-cache')
+                resp.redirect(url, lock=1)
+                resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
+                resp.setHeader('Cache-Control', 'no-cache')
             return 1
 
         # Could not challenge.
         return 0
+
+
+    #
+    #    ICredentialsResetPlugin implementation
+    #
+    security.declarePrivate('resetCredentials')
+    def resetCredentials(self, request, response):
+        """ user has logged out.
+        """
+        # Hook for custom reset-credentials.
+        try:
+          self.customResetCredentials(request,response)
+        except:
+          logger.debug('can\'t customResetCredentials', exc_info=True)
+
+        # Purge Data of Zope-Session.
+        s = request.SESSION
+        s.invalidate()
+        try:
+          s = self.session_data_manager.getSessionData()
+          s.clear()
+          s.getBrowserIdManager().flushBrowserIdCookie()
+        except:
+          logger.debug('can\'t purge Data of Zope-Session', exc_info=True)
+        
+        # Clear Zope-Session.
+        response.expireCookie("_ZopeId", path='/')
 
 
     security.declarePrivate('getLoginURL')
@@ -297,28 +303,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         token = request.get(self.header_name, '')
         decoded_token = self.decryptToken(token)
         username = decoded_token['preferred_username'].split('@')[0]
-        # Check valid-until against current timestamp.
-        if 'valid_until' in decoded_token:
-          valid_until = DateTime(creds['valid_until'])
-          if valid_until.timeTime() < DateTime().timeTime():
-              return None
         return (username, username)
-
-
-    #
-    #    IRolesPlugin implementation
-    #
-    security.declarePrivate( 'getRolesForPrincipal' )
-    def getRolesForPrincipal( self, principal, request=None):
-        """ See IRolesPlugin.
-        """
-        roles = []
-        token = request.get(self.header_name, '')
-        decoded_token = self.decryptToken(token)
-        username = decoded_token['preferred_username'].split('@')[0]
-        if principal.getId() == username and principal.getUserName() == username:
-          roles.extend(decoded_token.get('roles',[]))
-        return roles
 
 
     #
@@ -393,7 +378,6 @@ classImplements( ZMSPASSsoPlugin
                , IZMSPASSsoPlugin
                , ILoginPasswordHostExtractionPlugin
                , IAuthenticationPlugin
-               , IRolesPlugin
                , IChallengePlugin
                , ICredentialsResetPlugin
                , IUserAdderPlugin

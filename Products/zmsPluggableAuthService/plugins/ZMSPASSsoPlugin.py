@@ -316,13 +316,31 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
 
         o Return a Boolean indicating whether a user was added or not
         """
+        request = self.REQUEST
         token = request.get(self.header_name, '')
         decoded_token = self.decryptToken(token)
         if decoded_token:
           user_id = decoded_token['user_id']
           users = getattr(self,'_users',{})
           users[user_id] = decoded_token
-        return True
+          return True
+        return False
+
+    def doRemoveUser(self, login):
+        """ Remove a user record from a User Manager, with the given login.
+
+        o Return a Boolean indicating whether a user was removed or not
+        """
+        request = self.REQUEST
+        token = request.get(self.header_name, '')
+        decoded_token = self.decryptToken(token)
+        if decoded_token:
+          user_id = decoded_token['user_id']
+          users = getattr(self,'_users',{})
+          if user_id in users:
+            del users[user_id]
+          return True
+        return False
 
 
     #

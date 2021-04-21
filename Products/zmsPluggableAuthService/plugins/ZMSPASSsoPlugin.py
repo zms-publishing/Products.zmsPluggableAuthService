@@ -323,6 +323,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
           user_id = decoded_token['user_id']
           users = getattr(self,'_users',{})
           users[user_id] = decoded_token
+          setattr(self,'_users',users)
           return True
         return False
 
@@ -339,6 +340,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
           users = getattr(self,'_users',{})
           if user_id in users:
             del users[user_id]
+            setattr(self,'_users',users)
           return True
         return False
 

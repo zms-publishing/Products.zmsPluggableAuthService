@@ -327,7 +327,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
           return True
         return False
 
-    def doRemoveUser(self, login):
+    def removeUser(self, login):
         """ Remove a user record from a User Manager, with the given login.
 
         o Return a Boolean indicating whether a user was removed or not

@@ -318,7 +318,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         request = self.REQUEST
         token = request.get(self.header_name, '')
         decoded_token = self.decryptToken(token)
-        if False and decoded_token:
+        if decoded_token:
           user_id = decoded_token['user_id']
           users = getattr(self,'_users',{})
           if users.get(user_id,{}) != decoded_token:

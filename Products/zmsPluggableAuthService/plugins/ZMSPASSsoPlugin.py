@@ -55,7 +55,7 @@ class IZMSPASSsoPlugin(Interface):
     """
 
 manage_addZMSPASSsoPluginForm = PageTemplateFile(
-    'www/zpdcapAdd', globals(), __name__='manage_addZMSPASSsoPluginForm')
+    'www/zpssopAdd', globals(), __name__='manage_addZMSPASSsoPluginForm')
 
 
 def addZMSPASSsoPlugin( dispatcher
@@ -86,7 +86,8 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     security = ClassSecurityInfo()
     SALT = "zms_auth:login"
 
-    mock = PageTemplateFile('www/zpdcapMock', globals())
+    mock = PageTemplateFile('www/zpssopMock', globals())
+    manage_usersForm = PageTemplateFile('www/zpssopUsers', globals())
 
     _properties = ( { 'id'    : 'title'
                     , 'label' : 'Title'
@@ -118,10 +119,11 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                     , 'default': 'came_from'
                     }
                   )
-
+    
     manage_options = ( BasePlugin.manage_options[:1]
                      + Folder.manage_options[:1]
                      + Folder.manage_options[2:]
+                     + ({'label':'Users','action':'manage_usersForm'},)
                      )
 
     # Management Permissions.

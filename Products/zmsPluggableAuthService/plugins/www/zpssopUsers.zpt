@@ -4,7 +4,7 @@
 <main class="container-fluid">
 	<div class="alert alert-success" tal:condition="python:request.get('submit')==' Delete ' and request.get('ids')">
 		<tal:block tal:repeat="user_id request/ids">
-			<tal:block tal:content="user_id" tal:define="dummy0 python:here.deleteUser(user_id)"></tal:block>
+			<tal:block tal:content="user_id" tal:define="dummy0 python:here.doDeleteUser(user_id)"></tal:block>
 		</tal:block>
 	</div>
 	<p class="form-help">Manage users.</p>

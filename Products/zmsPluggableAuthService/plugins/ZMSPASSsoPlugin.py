@@ -340,6 +340,13 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
           return True
         return False
 
+    def doDeleteUser(self, user_id):
+        users = getattr(self,'_users',{})
+        if user_id in users:
+          del users[user_id]
+          self._users = users
+          return True
+        return False
 
     #
     #    IUserEnumerationPlugin implementation

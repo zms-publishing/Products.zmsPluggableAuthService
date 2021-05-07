@@ -297,6 +297,9 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         request = self.REQUEST
         token = request.get(self.header_name, '')
         decoded_token = self.decryptToken(token)
+        # refresh users
+        if decoded_token:
+          self.doAddUser(None, None)
         username = decoded_token.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in decoded_token else decoded_token.get('preferred_username','').split('@')[0]
         return (username, username)
 
@@ -318,8 +321,9 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         if decoded_token:
           user_id = decoded_token['user_id']
           users = getattr(self,'_users',{})
-          users[user_id] = decoded_token
-          self._users = users
+          if user_id in users or users[user_id] != decoded_token:
+            users[user_id] = decoded_token
+            self._users = users
           return True
         return False
 

@@ -23,7 +23,7 @@ $Id$
 
 from __future__ import absolute_import
 from __future__ import print_function
-from base64 import encodestring, decodestring
+from base64 import encodebytes, decodebytes
 import binascii
 from binascii import Error
 from six.moves.urllib.parse import quote, unquote
@@ -134,7 +134,7 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
             import sys,traceback
             t,v,tb = sys.exc_info()
             # print("###### encryptCookie: can't",traceback.format_exception(t, v, tb))
-            cookie = encodestring(cookie)
+            cookie = encodebytes(cookie)
         # print("##### encryptCookie",2,cookie)
         return cookie
 
@@ -148,7 +148,7 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
             import sys,traceback
             t,v,tb = sys.exc_info()
             # print("###### decryptCookie: can't",traceback.format_exception(t, v, tb))
-            cookie = decodestring(cookie)
+            cookie = decodebytes(cookie)
         # print("##### decryptCookie",2,cookie)
         return cookie
 

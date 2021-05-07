@@ -23,21 +23,15 @@ $Id$
 
 import logging
 
-from base64 import encodestring, decodestring
-from binascii import Error
-from six.moves.urllib.parse import quote, unquote
+from six.moves.urllib.parse import quote
 
 from AccessControl.SecurityInfo import ClassSecurityInfo
-from AccessControl.Permissions import view
 from AccessControl.class_init import InitializeClass
-
-from DateTime.DateTime import DateTime
 
 from OFS.Folder import Folder
 from zope.interface import Interface
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.PageTemplates.ZopePageTemplate import ZopePageTemplate
 
 from Products.PluggableAuthService.interfaces.plugins import ILoginPasswordHostExtractionPlugin
 from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin

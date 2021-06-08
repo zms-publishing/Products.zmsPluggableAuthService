@@ -19,9 +19,12 @@ setup(
         'Products.PluggableAuthService',
         'Zope',
         'cryptography',
-        'itsdangerous',
         # 'AccessControl',
         # 'Products.PageTemplates'
         # 'Products.PythonScripts'
     ],
+    extras_require = {
+        'nginx-sso':  ['itsdangerous',],
+    }
+    
 )

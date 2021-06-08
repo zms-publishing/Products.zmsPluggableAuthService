@@ -146,10 +146,14 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         
     
     def encryptToken(self, d):
-        from itsdangerous import TimedSerializer
-        coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
-        token = coder.dumps(d)
-        return token
+        try:
+            from itsdangerous import TimedSerializer
+            coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
+            token = coder.dumps(d)
+            return token
+        except:
+            logger.exception('Error decoding token')
+            raise
 
 
     def decryptToken(self, token, debug=False):

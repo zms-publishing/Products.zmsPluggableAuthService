@@ -165,13 +165,8 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
             d = coder.loads(token)
             return d
         except:
-            import sys, traceback, string
-            type, val, tb = sys.exc_info()
-            msg = ''.join(traceback.format_exception(type, val, tb))
-            del type, val, tb
-            if debug:
-              sys.stderr.write(msg)
-              return msg
+            logger.exception('Error decoding token')
+            raise
         return None
 
 

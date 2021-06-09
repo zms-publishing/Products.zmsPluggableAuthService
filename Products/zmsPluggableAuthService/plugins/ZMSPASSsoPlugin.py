@@ -166,7 +166,6 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
             return d
         except:
             logger.exception('Error decoding token')
-            raise
         return None
 
 

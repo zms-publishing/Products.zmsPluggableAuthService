@@ -22,8 +22,9 @@ $Id$
 """
 
 import logging
+import re
 
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 
 from AccessControl.SecurityInfo import ClassSecurityInfo
 from AccessControl.class_init import InitializeClass
@@ -106,6 +107,12 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                     , 'mode'   : 'w'
                     , 'default': 'http://zms.hosting/auth/login'
                     }
+                  , { 'id'     : 'login_pattern'
+                    , 'label'  : 'Login Pattern'
+                    , 'type'   : 'string'
+                    , 'mode'   : 'w'
+                    , 'default': 'https?:\/\/(.*)\/manage'
+                    }
                   , { 'id'     : 'came_from'
                     , 'label'  : 'Came From'
                     , 'type'   : 'string'
@@ -129,12 +136,13 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
       ('View', __viewPermissions__),
       )
 
-    def __init__(self, id, title=None, header_name='HTTP_X_AUTH_RESULT', login_path='http://zms.hosting/auth/login'):
+    def __init__(self, id, title=None, header_name='HTTP_X_AUTH_RESULT', login_path='http://zms.hosting/auth/login', login_pattern='https?:\/\/(.*)\/manage'):
         self._setId(id)
         self.title = title
         self.secret_key = ''
         self.header_name = header_name
         self.login_path = login_path
+        self.login_pattern = login_pattern
         self.came_from = 'came_from'
 
 
@@ -143,46 +151,74 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         if not getattr(self,'secret_key',''):
             self.secret_key = Fernet.generate_key()
         return self.secret_key
-        
-    
+
+
+    def matchPattern(self, p, s):
+      prog = re.compile(p)
+      result = prog.match(s)
+      return result is not None
+
+
     def encryptToken(self, d):
-        try:
-            from itsdangerous import TimedSerializer
-            coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
-            token = coder.dumps(d)
-            return token
-        except:
-            logger.exception('Error decoding token')
-            raise
+        from itsdangerous import TimedSerializer
+        coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
+        token = coder.dumps(d)
+        return token
 
 
     def decryptToken(self, token, debug=False):
+        d = {}
         try:
             from itsdangerous import TimedSerializer
             coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
-            if isinstance(token,str):
-              token = bytes(token,'utf-8')
-            d = coder.loads(token)
-            return d
+            if token:
+                if isinstance(token,str):
+                    token = bytes(token,'utf-8')
+                d = coder.loads(token)
         except:
-            logger.exception('Error decoding token')
-        return None
+            logger.warning('can\'t decrypt token')
+        return d
 
 
+    #
+    #    IExtractionPlugin implementation
+    #
     security.declarePrivate('extractCredentials')
     def extractCredentials(self, request):
-        """ Extract credentials from request. """
-        token = request.get(self.header_name, '')
-        decoded_token = self.decryptToken(token)
-        if decoded_token:
-            decoded_token['remote_host'] = request.get('REMOTE_HOST', '')
+        """ request -> {...}
+
+        o Return a mapping of any derived credentials.
+
+        o Return an empty mapping to indicate that the plugin found no
+          appropriate credentials.
+        """
+        logger.info("ZMSPASSsoPlugin.extractCredentials")
+        creds = {}
+        
+        login_pw = request._authUserPW()
+        if login_pw is not None:
+            name, password = login_pw
+            creds['login'] = name
+            creds['password'] = password
+        
+        else:
+          token = request.get(self.header_name, '')
+          decoded_token = self.decryptToken(token)
+          creds = decoded_token
+        
+        if creds:
+            creds['remote_host'] = request.get('REMOTE_HOST', '')
             try:
-                decoded_token['remote_address'] = request.getClientAddr()
+                creds['remote_address'] = request.getClientAddr()
             except AttributeError:
-                decoded_token['remote_address'] = request.get('REMOTE_ADDR', '')
-        return decoded_token
+                creds['remote_address'] = request.get('REMOTE_ADDR', '')
+        
+        return creds
 
 
+    #
+    #    IChallengePlugin implementation
+    #
     security.declarePrivate('challenge')
     def challenge(self, request, response, **kw):
         """ Assert via the response that credentials will be gathered.
@@ -201,6 +237,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
           - Cause the response object to redirect to another URL (a
             login form page, for instance)
         """
+        logger.info("ZMSPASSsoPlugin.challenge")
         request = self.REQUEST
         resp = request['RESPONSE']
 
@@ -235,13 +272,19 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
             else:
                 sep = '?'
 
+            # credentials exist
             token = request.get(self.header_name, '')
-            if not token:
+            decoded_token = self.decryptToken(token)
+            if decoded_token:
+                return 1
+
+            # redirect to login_path if login_pattern matches
+            if self.matchPattern(self.login_pattern,came_from):
                 url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
                 resp.redirect(url, lock=1)
                 resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
                 resp.setHeader('Cache-Control', 'no-cache')
-            return 1
+                return 1
 
         # Could not challenge.
         return 0
@@ -292,14 +335,17 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     def authenticateCredentials( self, credentials, request=None ):
         """ See IAuthenticationPlugin.
         """
+        logger.info("ZMSPASSsoPlugin.authenticateCredentials: %s"%str((credentials)))
         request = self.REQUEST
         token = request.get(self.header_name, '')
         decoded_token = self.decryptToken(token)
-        # refresh users
         if decoded_token:
+          # refresh users
           self.doAddUser(None, None)
-        username = decoded_token.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in decoded_token else decoded_token.get('preferred_username','').split('@')[0]
-        return (username, username)
+          # extract username
+          username = decoded_token.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in decoded_token else decoded_token.get('preferred_username','').split('@')[0]
+          return (username, username)
+        return None
 
 
     #

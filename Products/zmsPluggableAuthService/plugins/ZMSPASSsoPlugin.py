@@ -335,7 +335,6 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     def authenticateCredentials( self, credentials, request=None ):
         """ See IAuthenticationPlugin.
         """
-        logger.info("ZMSPASSsoPlugin.authenticateCredentials: %s"%str((credentials)))
         request = self.REQUEST
         token = request.get(self.header_name, '')
         decoded_token = self.decryptToken(token)

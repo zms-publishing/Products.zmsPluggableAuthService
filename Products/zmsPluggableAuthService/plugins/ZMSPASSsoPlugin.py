@@ -279,15 +279,12 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                 return 1
 
             # redirect to login_path if login_pattern matches
-            try:
-                if self.matchPattern(self.login_pattern,came_from):
-                    url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
-                    resp.redirect(url, lock=1)
-                    resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
-                    resp.setHeader('Cache-Control', 'no-cache')
-                    return 1
-            except:
-                pass
+            if self.matchPattern(self.login_pattern,came_from):
+                url = '%s%s%s=%s' % (url, sep, self.came_from, quote(came_from))
+                resp.redirect(url, lock=1)
+                resp.setHeader('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT')
+                resp.setHeader('Cache-Control', 'no-cache')
+                return 1
 
         # Could not challenge.
         return 0
@@ -338,6 +335,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     def authenticateCredentials( self, credentials, request=None ):
         """ See IAuthenticationPlugin.
         """
+        # logger.info("ZMSPASSsoPlugin.authenticateCredentials: %s"%str((credentials)))
         request = self.REQUEST
         token = request.get(self.header_name, '')
         decoded_token = self.decryptToken(token)

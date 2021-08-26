@@ -23,4 +23,8 @@ setup(
         # 'Products.PageTemplates'
         # 'Products.PythonScripts'
     ],
+    extras_require = {
+        'nginx-sso':  ['itsdangerous',],
+    }
+    
 )

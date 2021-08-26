@@ -21,13 +21,23 @@ from AccessControl.Permissions import manage_users as ManageUsers
 
 from Products.PluggableAuthService.PluggableAuthService import registerMultiPlugin
 
-from .plugins import ZMSPASCookieAuthHelper, ZMSPASRolePlugin, ZMSPASUserPlugin
+from .plugins import ZMSPASCookieAuthHelper, ZMSPASSsoPlugin, ZMSPASRolePlugin, ZMSPASUserPlugin
 
 registerMultiPlugin(ZMSPASCookieAuthHelper.ZMSPASCookieAuthHelper.meta_type)
+registerMultiPlugin(ZMSPASSsoPlugin.ZMSPASSsoPlugin.meta_type)
 registerMultiPlugin(ZMSPASRolePlugin.ZMSPASRolePlugin.meta_type)
 registerMultiPlugin(ZMSPASUserPlugin.ZMSPASUserPlugin.meta_type)
 
 def initialize(context):
+
+    context.registerClass( ZMSPASSsoPlugin.ZMSPASSsoPlugin
+                         , permission=ManageUsers
+                         , constructors=(
+                            ZMSPASSsoPlugin.manage_addZMSPASSsoPluginForm,
+                            ZMSPASSsoPlugin.addZMSPASSsoPlugin, )
+                         , visibility=None
+                         , icon='plugins/www/CookieAuthHelper.gif'
+                         )
 
     context.registerClass( ZMSPASCookieAuthHelper.ZMSPASCookieAuthHelper
                          , permission=ManageUsers

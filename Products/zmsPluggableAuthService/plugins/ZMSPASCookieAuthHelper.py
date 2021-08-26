@@ -23,7 +23,7 @@ $Id$
 
 from __future__ import absolute_import
 from __future__ import print_function
-from base64 import encodestring, decodestring
+from base64 import encodebytes, decodebytes
 import binascii
 from binascii import Error
 from six.moves.urllib.parse import quote, unquote
@@ -75,6 +75,8 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
     """ Multi-plugin for managing details of Cookie Authentication. """
 
     meta_type = 'ZMS PluggableAuthService Cookie Auth Helper'
+    zmi_icon = 'fas fa-cookie-bite'
+    zmi_show_add_dialog = True
     cookie_name = '__ginger_snap'
     login_path = 'login_form'
     security = ClassSecurityInfo()
@@ -124,30 +126,30 @@ class ZMSPASCookieAuthHelper(Folder, BasePlugin):
 
 
     def encryptCookie(self, cookie):
-        print("##### encryptCookie",1,cookie)
+        # print("##### encryptCookie",1,cookie)
         try:
             cipher_suite = self.getCipherSuite() 
             cookie = cipher_suite.encrypt(cookie)
         except:
             import sys,traceback
             t,v,tb = sys.exc_info()
-            print("###### encryptCookie: can't",traceback.format_exception(t, v, tb))
-            cookie = encodestring(cookie)
-        print("##### encryptCookie",2,cookie)
+            # print("###### encryptCookie: can't",traceback.format_exception(t, v, tb))
+            cookie = encodebytes(cookie)
+        # print("##### encryptCookie",2,cookie)
         return cookie
 
 
     def decryptCookie(self, cookie):
-        print("##### decryptCookie",1,cookie)
+        # print("##### decryptCookie",1,cookie)
         try:
             cipher_suite = self.getCipherSuite() 
             cookie = cipher_suite.decrypt(cookie)
         except:
             import sys,traceback
             t,v,tb = sys.exc_info()
-            print("###### decryptCookie: can't",traceback.format_exception(t, v, tb))
-            cookie = decodestring(cookie)
-        print("##### decryptCookie",2,cookie)
+            # print("###### decryptCookie: can't",traceback.format_exception(t, v, tb))
+            cookie = decodebytes(cookie)
+        # print("##### decryptCookie",2,cookie)
         return cookie
 
 

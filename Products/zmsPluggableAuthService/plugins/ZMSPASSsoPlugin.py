@@ -176,7 +176,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                     token = bytes(token,'utf-8')
                 d = coder.loads(token)
         except:
-            logger.warning('can\'t decrypt token')
+            logger.exception("can't decrypt token")
         return d
 
 

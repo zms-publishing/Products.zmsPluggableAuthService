@@ -119,6 +119,12 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                     , 'mode'   : 'w'
                     , 'default': 'came_from'
                     }
+                  , { 'id'     : 'user_id_attrs'
+                    , 'label'  : 'User ID Attributes'
+                    , 'type'   : 'string'
+                    , 'mode'   : 'w'
+                    , 'default': 'user_id,sub'
+                    }
                   )
     
     manage_options = ( BasePlugin.manage_options[:1]
@@ -338,13 +344,21 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         # logger.info("ZMSPASSsoPlugin.authenticateCredentials: %s"%str((credentials)))
         request = self.REQUEST
         token = request.get(self.header_name, '')
+        user_id_attrs = [ x.strip() for x in (self.user_id_attr).split(',') ]
         decoded_token = self.decryptToken(token)
         if decoded_token:
           # refresh users
           self.doAddUser(None, None)
           # extract username
-          username = decoded_token.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in decoded_token else decoded_token.get('preferred_username','').split('@')[0]
-          return (username, username)
+          for user_id_attr in user_id_attrs:
+            if user_id_attr in decoded_token:
+              username = decoded_token.get(user_id_attr,'')
+              # ##########################################
+              # CAVE: UNIBE SPECIAL (to be generalized!)
+              # ##########################################
+              if user_id_attr=='preferred_username':
+                username = username.split('@')[0]
+            return (username, username)
         return None
 
 

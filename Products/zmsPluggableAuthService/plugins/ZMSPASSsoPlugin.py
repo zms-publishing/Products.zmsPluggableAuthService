@@ -362,8 +362,8 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         return None
 
     def get_user_id_attrs(self):
-      if not hasattr(self, 'user_id_attrs'):
-        self.user_id_attrs = 'onpremisessamaccountname,preferred_username'
+      if not self.hasProperty('user_id_attrs'):
+        self.manage_addProperty('user_id_attrs','onpremisessamaccountname,preferred_username','string')
       return [ x.strip() for x in (self.user_id_attr).split(',') ]
 
     #

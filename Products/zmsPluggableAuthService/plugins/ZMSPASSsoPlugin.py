@@ -70,6 +70,17 @@ def addZMSPASSsoPlugin( dispatcher
                                       'ZMSPASSsoPluginr+added.'
                                     % dispatcher.absolute_url() )
 
+import logging
+from functools import wraps
+def logg_exception(wrapped):
+  @wraps(wrapped)
+  def wrapper(*args, **kwargs):
+    try:
+      return wrapped(*args, **kwargs)
+    except:
+      logging.exception('Logging otherwise swallowed exception')
+      raise
+  return wrapper
 
 class ZMSPASSsoPlugin(Folder, BasePlugin):
     """ Multi-plugin for managing details of SSO Authentication. """
@@ -190,6 +201,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     #    IExtractionPlugin implementation
     #
     security.declarePrivate('extractCredentials')
+    @logg_exception
     def extractCredentials(self, request):
         """ request -> {...}
 
@@ -226,6 +238,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     #    IChallengePlugin implementation
     #
     security.declarePrivate('challenge')
+    @logg_exception
     def challenge(self, request, response, **kw):
         """ Assert via the response that credentials will be gathered.
 
@@ -338,6 +351,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     #    IAuthenticationPlugin implementation
     #
     security.declarePrivate( 'authenticateCredentials' )
+    @logg_exception
     def authenticateCredentials( self, credentials, request=None ):
         """ See IAuthenticationPlugin.
         """
@@ -362,10 +376,10 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         return None
 
     def get_user_id_attrs(self):
-      if not self.hasProperty('user_id_attrs'):
+      if not hasattr(self, 'user_id_attrs'):
         return ['onpremisessamaccountname','preferred_username']
         # self.manage_addProperty('user_id_attrs','onpremisessamaccountname,preferred_username','string')
-      return [ x.strip() for x in (self.user_id_attr).split(',') ]
+      return [ x.strip() for x in self.user_id_attrs.split(',') ]
 
     #
     #    IUserAdderPlugin implementation

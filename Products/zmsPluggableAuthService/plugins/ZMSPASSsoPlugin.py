@@ -344,7 +344,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         # logger.info("ZMSPASSsoPlugin.authenticateCredentials: %s"%str((credentials)))
         request = self.REQUEST
         token = request.get(self.header_name, '')
-        user_id_attrs = self.get_user_id_attrs():
+        user_id_attrs = self.get_user_id_attrs()
         decoded_token = self.decryptToken(token)
         if decoded_token:
           # refresh users

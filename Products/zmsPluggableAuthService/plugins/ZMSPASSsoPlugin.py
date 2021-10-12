@@ -344,7 +344,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         # logger.info("ZMSPASSsoPlugin.authenticateCredentials: %s"%str((credentials)))
         request = self.REQUEST
         token = request.get(self.header_name, '')
-        user_id_attrs = [ x.strip() for x in (self.user_id_attr).split(',') ]
+        user_id_attrs = self.get_user_id_attrs():
         decoded_token = self.decryptToken(token)
         if decoded_token:
           # refresh users
@@ -361,6 +361,10 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
             return (username, username)
         return None
 
+    def get_user_id_attrs(self):
+      if not hasattr(self, 'user_id_attrs'):
+        self.user_id_attrs = 'onpremisessamaccountname,preferred_username'
+      return [ x.strip() for x in (self.user_id_attr).split(',') ]
 
     #
     #    IUserAdderPlugin implementation

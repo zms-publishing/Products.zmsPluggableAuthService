@@ -323,7 +323,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
           logger.debug('can\'t customResetCredentials', exc_info=True)
 
         # Purge Data of Zope-Session.
-        # s = request.SESSION
+        s = request.SESSION
         # s.invalidate()
         try:
           s = self.session_data_manager.getSessionData()

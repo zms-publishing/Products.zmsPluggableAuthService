@@ -153,7 +153,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
       ('View', __viewPermissions__),
       )
 
-    def __init__(self, id, title=None, header_name='HTTP_X_AUTH_RESULT', login_path='http://zms.hosting/auth/login', login_pattern='https?:\/\/(.*)\/manage'):
+    def __init__(self, id, title=None, header_name='HTTP_X_AUTH_RESULT', login_path='http://zms.hosting/auth/login', login_pattern='https?:\/\/(.*)\/manage', user_id_attrs='user_id,sub'):
         self._setId(id)
         self.title = title
         self.secret_key = ''
@@ -161,6 +161,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         self.login_path = login_path
         self.login_pattern = login_pattern
         self.came_from = 'came_from'
+        self.user_id_attrs = user_id_attrs
 
 
     def getSecretKey(self):

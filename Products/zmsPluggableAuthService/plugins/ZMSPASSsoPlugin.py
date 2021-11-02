@@ -43,6 +43,8 @@ from Products.PluggableAuthService.interfaces.plugins import IUserEnumerationPlu
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
 
+mockup = False
+
 logger = logging.getLogger('ZMSPASSsoPlugin')
 
 class IZMSPASSsoPlugin(Interface):
@@ -213,7 +215,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         """
         logger.info("ZMSPASSsoPlugin.extractCredentials")
         creds = {}
-        
+
         login_pw = request._authUserPW()
         if login_pw is not None:
             name, password = login_pw
@@ -221,6 +223,14 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
             creds['password'] = password
         
         else:
+
+          # Mockup
+          logger.info("ZMSPASSsoPlugin.extractCredentials: mockup=%s"%str((mockup and getattr(self, "mockup", False))))
+          if getattr(self, "mockup", False):
+              creds['login'] = 'mockuser'
+              creds['password'] = 'mockpassword'
+              return creds
+
           token = request.get(self.header_name, '')
           decoded_token = self.decryptToken(token)
           creds = decoded_token
@@ -292,6 +302,10 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
             else:
                 sep = '?'
 
+            # Mockup
+            if getattr(self, "mockup", False):
+                return 1
+
             # credentials exist
             token = request.get(self.header_name, '')
             decoded_token = self.decryptToken(token)
@@ -356,8 +370,17 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     def authenticateCredentials( self, credentials, request=None ):
         """ See IAuthenticationPlugin.
         """
-        # logger.info("ZMSPASSsoPlugin.authenticateCredentials: %s"%str((credentials)))
+        logger.info("ZMSPASSsoPlugin.authenticateCredentials: %s"%str((credentials)))
         request = self.REQUEST
+
+        # Request.
+        login_pw = request._authUserPW()
+        if login_pw is None:
+            # Mockup.
+            if getattr(self, "mockup", False):
+                username = "mockuser" 
+                return (username, username)
+
         token = request.get(self.header_name, '')
         user_id_attrs = self.get_user_id_attrs()
         decoded_token = self.decryptToken(token)
@@ -373,6 +396,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
               # ##########################################
               if user_id_attr=='preferred_username':
                 username = username.split('@')[0]
+            logger.info("ZMSPASSsoPlugin.authenticateCredentials: username=%s"%str((username)))
             return (username, username)
         return None
 
@@ -476,6 +500,16 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         o Insufficiently-specified criteria may have catastrophic
           scaling issues for some implementations.
         """
+
+        # Mockup
+        logger.info("ZMSPASSsoPlugin.enumerateUsers: mockup=%s"%str((mockup and getattr(self, "mockup", False))))
+        if getattr(self, "mockup", False):
+            users = {}
+            users["mockuser"] = {"user_id":"mockuser","onpremisessamaccountname":"mockuser"} 
+            users["foobar"] = {"user_id":"foobar","onpremisessamaccountname":"foobar"} 
+            users["johndoe"] = {"user_id":"johndoe","onpremisessamaccountname":"johndoe"} 
+            return [{'id':x['user_id'],'login':x.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in x else x.get('preferred_username','').split('@')[0],'pluginid':self.getId()} for x in users.values()]
+
         users = getattr(self,'_users',{})
         return [{'id':x['user_id'],'login':x.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in x else x.get('preferred_username','').split('@')[0],'pluginid':self.getId()} for x in users.values()]
 

@@ -224,11 +224,9 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
           # Mockup
           if getattr(self, "mockup", False):
               header = request.cookies.get(self.header_name,None)
-              logger.info("ZMSPASSsoPlugin.extractCredentials: header=%s"%str(header))
               if header:
                 token = eval(header)
-                logger.info("ZMSPASSsoPlugin.extractCredentials: token=%s"%str(token))
-                username = token["userid"]
+                username = token["user_id"]
                 logger.info("ZMSPASSsoPlugin.extractCredentials: username=%s"%str(username))
                 creds['login'] = username
                 creds['password'] = "secret"

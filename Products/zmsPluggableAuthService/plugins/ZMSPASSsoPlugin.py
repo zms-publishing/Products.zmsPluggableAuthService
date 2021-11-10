@@ -40,6 +40,7 @@ from Products.PluggableAuthService.interfaces.plugins import IChallengePlugin
 from Products.PluggableAuthService.interfaces.plugins import ICredentialsResetPlugin
 from Products.PluggableAuthService.interfaces.plugins import IUserAdderPlugin
 from Products.PluggableAuthService.interfaces.plugins import IUserEnumerationPlugin
+from Products.PluggableAuthService.interfaces.plugins import IRolesPlugin
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
 
@@ -523,6 +524,21 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         users = getattr(self,'_users',{})
         return [{'id':x['user_id'],'login':x.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in x else x.get('preferred_username','').split('@')[0],'pluginid':self.getId()} for x in users.values()]
 
+    #
+    #    IRolesPlugin implementation
+    #
+    #--security.declarePrivate( 'getRolesForPrincipal' )
+    def getRolesForPrincipal( self, principal, request=None ):
+        """ See IRolesPlugin.
+        """
+        roles_attr = getattr(self,'roles_attr','') 
+        if roles_attr:
+          token = request.get(self.header_name, '')
+          decoded_token = self.decryptToken(token)
+          if decoded_token:
+            return decoded_token.get(roles_attr,[])
+        return None
+
 
 classImplements( ZMSPASSsoPlugin
                , IZMSPASSsoPlugin
@@ -532,6 +548,7 @@ classImplements( ZMSPASSsoPlugin
                , ICredentialsResetPlugin
                , IUserAdderPlugin
                , IUserEnumerationPlugin
+               , IRolesPlugin
                )
 
 InitializeClass(ZMSPASSsoPlugin)

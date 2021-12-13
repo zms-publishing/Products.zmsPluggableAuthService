@@ -211,7 +211,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         o Return an empty mapping to indicate that the plugin found no
           appropriate credentials.
         """
-        logger.info("ZMSPASSsoPlugin.extractCredentials")
+        logger.debug("ZMSPASSsoPlugin.extractCredentials")
         creds = {}
 
         login_pw = request._authUserPW()
@@ -228,7 +228,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
               if header:
                 token = eval(header)
                 username = token["user_id"]
-                logger.info("ZMSPASSsoPlugin.extractCredentials: username=%s"%str(username))
+                logger.debug("ZMSPASSsoPlugin.extractCredentials: username=%s"%str(username))
                 creds['login'] = username
                 creds['password'] = "secret"
                 return creds
@@ -269,7 +269,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
           - Cause the response object to redirect to another URL (a
             login form page, for instance)
         """
-        logger.info("ZMSPASSsoPlugin.challenge")
+        logger.debug("ZMSPASSsoPlugin.challenge")
         request = self.REQUEST
         resp = request['RESPONSE']
 
@@ -310,7 +310,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                 if header:
                   token = eval(header)
                   username = token["user_id"]
-                  logger.info("ZMSPASSsoPlugin.challenge: username=%s"%str(username))
+                  logger.debug("ZMSPASSsoPlugin.challenge: username=%s"%str(username))
                   if username is not None:
                     return 1
 
@@ -378,7 +378,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     def authenticateCredentials( self, credentials, request=None ):
         """ See IAuthenticationPlugin.
         """
-        logger.info("ZMSPASSsoPlugin.authenticateCredentials: %s"%str((credentials)))
+        logger.debug("ZMSPASSsoPlugin.authenticateCredentials")
         request = self.REQUEST
 
         # Request.
@@ -390,7 +390,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                 if header:
                   token = eval(header)
                   username = token["user_id"]
-                  logger.info("ZMSPASSsoPlugin.authenticateCredentials: username=%s"%str(username))
+                  logger.debug("ZMSPASSsoPlugin.authenticateCredentials: username=%s"%str(username))
                   return (username, username)
 
         token = request.get(self.header_name, '')
@@ -408,7 +408,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
               # ##########################################
               if user_id_attr=='preferred_username':
                 username = username.split('@')[0]
-            logger.info("ZMSPASSsoPlugin.authenticateCredentials: username=%s"%str((username)))
+            logger.debug("ZMSPASSsoPlugin.authenticateCredentials: username=%s"%str((username)))
             return (username, username)
         return None
 

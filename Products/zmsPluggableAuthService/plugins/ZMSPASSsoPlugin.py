@@ -438,7 +438,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
           users = getattr(self,'_users',{})
           user = users.get(user_id,{})
           last_login = user.get('last_login','NaD') # last-login or Not a Date
-          today = datetime.datetine.now().strftime('%Y-%m-%d')
+          today = datetime.datetime.now().strftime('%Y-%m-%d')
           if last_login != today < 0: # last-login not today
             users[user_id] = decoded_token
             users[user_id]['last_login'] = today

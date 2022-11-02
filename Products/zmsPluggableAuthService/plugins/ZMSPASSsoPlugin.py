@@ -21,7 +21,6 @@
 $Id$
 """
 
-import datetime
 import logging
 import re
 
@@ -436,14 +435,10 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         if decoded_token:
           user_id = decoded_token['user_id']
           users = getattr(self,'_users',{})
-          user = users.get(user_id,{})
-          last_login = user.get('last_login','NaD') # last-login or Not a Date
-          today = datetime.datetime.now().strftime('%Y-%m-%d')
-          if last_login != today < 0: # last-login not today
+          if users.get(user_id,{}) != decoded_token:
             users[user_id] = decoded_token
-            users[user_id]['last_login'] = today
             self._users = users
-          return True 
+          return True
         return False
 
     def removeUser(self, login):
@@ -521,13 +516,13 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         # Mockup
         if getattr(self, "mockup", False):
             users = {}
-            users["foo"] = {"user_id":"foo","onpremisessamaccountname":"foo","last_login":"2022-01-01"} 
+            users["foo"] = {"user_id":"foo","onpremisessamaccountname":"foo"} 
             users["janesmith"] = {"user_id":"janesmith","onpremisessamaccountname":"janesmith"} 
-            users["johndoe"] = {"user_id":"johndoe","onpremisessamaccountname":"johndoe","last_login":"2022-04-01"} 
-            return [{'id':x['user_id'],'last_login':x.get('last_login'),'login':x.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in x else x.get('preferred_username','').split('@')[0],'pluginid':self.getId()} for x in users.values()]
+            users["johndoe"] = {"user_id":"johndoe","onpremisessamaccountname":"johndoe"} 
+            return [{'id':x['user_id'],'login':x.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in x else x.get('preferred_username','').split('@')[0],'pluginid':self.getId()} for x in users.values()]
 
         users = getattr(self,'_users',{})
-        return [{'id':x['user_id'],'last_login':x.get('last_login'),'login':x.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in x else x.get('preferred_username','').split('@')[0],'pluginid':self.getId()} for x in users.values()]
+        return [{'id':x['user_id'],'login':x.get('onpremisessamaccountname','') if 'onpremisessamaccountname' in x else x.get('preferred_username','').split('@')[0],'pluginid':self.getId()} for x in users.values()]
 
     #
     #    IRolesPlugin implementation

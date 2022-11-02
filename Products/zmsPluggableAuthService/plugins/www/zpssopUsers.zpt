@@ -13,17 +13,9 @@
 			<label for="users" class="form-label col-sm-3 col-md-2">Users</label>
 			<div class="col-sm-9 col-md-10">
 				<table class="table table-bordered table-striped">
-				<thead>
-				<tr>
-					<th></th>
-					<th>Login</th>
-					<th>Last login</th>
-				</tr>
-				</thead>
 				<tr tal:repeat="user python:here.enumerateUsers()">
 					<td><input type="checkbox" name="ids:list" tal:attributes="value user/id; title user/id"></td>
 					<td><tal:block tal:content="user/login"></tal:block></td>
-					<td><tal:block tal:content="python:user.get('last_login')"></tal:block></td>
 				</tr>
 				</table>
 			</div>

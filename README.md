@@ -17,5 +17,5 @@ Login Pattern | https?:\/\/(edit\.|www.cmstest)(.*) | the pattern of original ur
 Came From | came_from | the name of the request-parameter containing the original url the request came from
 
 ## License
-Copyright (c) 2000-2022 `SNTL Publishing <http://www.sntl-publishing.com>`_, Berlin. 
+Copyright (c) 2000-2023 `SNTL Publishing <http://www.sntl-publishing.com>`_, Berlin. 
 Code released under the `GNU General Public License v3 <http://www.gnu.org/licenses/gpl.html>`_ license.

@@ -24,7 +24,12 @@ $Id$
 import logging
 import re
 
-from urllib.parse import quote
+try:
+  from urllib.parse import quote
+except ImportError:
+  # Py2
+  from urllib import quote
+
 
 from AccessControl.SecurityInfo import ClassSecurityInfo
 from AccessControl.class_init import InitializeClass

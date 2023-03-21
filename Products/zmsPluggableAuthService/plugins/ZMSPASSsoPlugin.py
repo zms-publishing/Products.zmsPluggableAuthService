@@ -196,7 +196,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
             coder = TimedSerializer(secret_key=self.getSecretKey(),salt=self.SALT)
             if token:
                 if isinstance(token,str):
-                    token = token.deocde('utf-8')
+                    token = token.decode('utf-8')
                 d = coder.loads(token)
         except:
             logger.exception("can't decrypt token")

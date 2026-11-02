@@ -43,6 +43,7 @@ from Products.PluggableAuthService.interfaces.plugins import IUserEnumerationPlu
 from Products.PluggableAuthService.interfaces.plugins import IRolesPlugin
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
+from ZPublisher import zpublish
 
 logger = logging.getLogger('ZMSPASSsoPlugin')
 
@@ -422,6 +423,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     #    IUserAdderPlugin implementation
     #
     #--security.declarePrivate( 'doAddUser' )
+    @zpublish(False)
     def doAddUser(self, login, password):
         """ Add a user record to a User Manager, with the given login
             and password.  It is up to the implementation to determine
@@ -471,6 +473,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     #    IUserEnumerationPlugin implementation
     #
     #--security.declarePrivate( 'enumerateUsers' )
+    @zpublish(False)
     def enumerateUsers(self, id=None, login=None, exact_match=False, sort_by=None,
                        max_results=None, **kw):
         """ -> (user_info_1, ... user_info_N)
@@ -529,6 +532,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     #    IRolesPlugin implementation
     #
     #--security.declarePrivate( 'getRolesForPrincipal' )
+    @zpublish(False)
     def getRolesForPrincipal( self, principal, request=None ):
         """ See IRolesPlugin.
         """

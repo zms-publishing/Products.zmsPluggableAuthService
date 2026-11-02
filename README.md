@@ -20,7 +20,8 @@ Secret&nbsp;Key | `******************` | the secret key used to decrypt the auth
 Login&nbsp;Path | `http://zms.hosting/auth/login` | the path for redirection from challenge to SSO login.
 Login&nbsp;Pattern | `https?:\/\/(.*)\/manage` | the pattern of original url for redirection from challenge to SSO login.
 Came&nbsp;From | `came_from` | the name of the request-parameter containing the original url the request came from
-User&nbsp;ID Attributes | `user_id,sub` | the name(s) of the http header payload fields representing the user id. 
+User&nbsp;ID Attributes | `user_id,sub` | the name(s) of the http header payload fields representing the user id.
+Do Add&nbsp;User on OIDC Key:Value | `doAddUser_on_oidc_key` | Successful OIDC authentication implies user-data capturing (\_users-property) if the given _key:value_ pair (separator is colon) is found on OIDC payload. If `doAddUser_on_oidc_key` is an empty value (default) the data capturing will not happen.
 *Optional\*:* `roles_attr` | `roles_attr` | the name of the http header payload field representing a list of roles. 
 
  \* *The ZMS PluggableAuthService SSO Plugin is able to extract the user roles; for this a new attribute named "roles_attr" (string type) must be added manually to the property list*

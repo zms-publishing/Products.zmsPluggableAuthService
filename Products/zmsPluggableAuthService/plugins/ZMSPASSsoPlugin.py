@@ -437,8 +437,8 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         if decoded_token:
           user_id = decoded_token['user_id']
           users = getattr(self,'_users',{})
-          # Deactivate adding (DOSIS)
-          if False and users.get(user_id,{}) != decoded_token:
+          # Activated adding
+          if users.get(user_id,{}) != decoded_token:
             users[user_id] = decoded_token
             self._users = users
           return True

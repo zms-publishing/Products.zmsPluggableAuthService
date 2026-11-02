@@ -91,6 +91,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
     zmi_icon = 'fas fa-cookie-bite text-danger'
     zmi_show_add_dialog = True
     header_name = '__ginger_snap'
+    doAddUser_on_oidc_key = ''
     security = ClassSecurityInfo()
     SALT = "zms_auth:login"
 
@@ -123,7 +124,7 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                     , 'label'  : 'Login Pattern'
                     , 'type'   : 'string'
                     , 'mode'   : 'w'
-                    , 'default': 'https?:\/\/(.*)\/manage'
+                    , 'default': 'https?:\\/\\/(.*)\\/manage'
                     }
                   , { 'id'     : 'came_from'
                     , 'label'  : 'Came From'
@@ -136,6 +137,12 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
                     , 'type'   : 'string'
                     , 'mode'   : 'w'
                     , 'default': 'user_id,sub'
+                    }
+                  , { 'id'     : 'doAddUser_on_oidc_key'
+                    , 'label'  : 'Do Add User on OIDC Key:Value'
+                    , 'type'   : 'string'
+                    , 'mode'   : 'w'
+                    , 'default': ''
                     }
                   )
     
@@ -154,15 +161,16 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
       ('View', __viewPermissions__),
       )
 
-    def __init__(self, id, title=None, header_name='HTTP_X_AUTH_RESULT', login_path='http://zms.hosting/auth/login', login_pattern='https?:\/\/(.*)\/manage', user_id_attrs='user_id,sub'):
+    def __init__(self,id,title=None,header_name='HTTP_X_AUTH_RESULT',login_path='http://zms.hosting/auth/login',login_pattern='https?:\\/\\/(.*)\\/manage',came_from='came_from',user_id_attrs='user_id,sub',doAddUser_on_oidc_key=''):
         self._setId(id)
         self.title = title
         self.secret_key = ''
         self.header_name = header_name
         self.login_path = login_path
         self.login_pattern = login_pattern
-        self.came_from = 'came_from'
+        self.came_from = came_from
         self.user_id_attrs = user_id_attrs
+        self.doAddUser_on_oidc_key = doAddUser_on_oidc_key
 
 
     def getSecretKey(self):
@@ -399,7 +407,16 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         decoded_token = self.decryptToken(token)
         if decoded_token:
           # refresh users
-          self.doAddUser(None, None)
+          try:
+            capture_condition = self.doAddUser_on_oidc_key
+          except AttributeError:
+            capture_condition = ''
+            self.doAddUser_on_oidc_key = capture_condition
+          capture_condition = capture_condition.strip()
+          if capture_condition:
+            key, separator, expected_value = capture_condition.partition(':')
+            if separator and key.strip() and decoded_token.get(key.strip()) == expected_value.strip():
+              self.doAddUser(None, None)
           # extract username
           for user_id_attr in user_id_attrs:
             if user_id_attr in decoded_token:
@@ -437,8 +454,8 @@ class ZMSPASSsoPlugin(Folder, BasePlugin):
         if decoded_token:
           user_id = decoded_token['user_id']
           users = getattr(self,'_users',{})
-          # Deactivate adding (DOSIS)
-          if False and users.get(user_id,{}) != decoded_token:
+
+          if users.get(user_id,{}) != decoded_token:
             users[user_id] = decoded_token
             self._users = users
           return True

@@ -21,14 +21,24 @@ from AccessControl.Permissions import manage_users as ManageUsers
 
 from Products.PluggableAuthService.PluggableAuthService import registerMultiPlugin
 
-from .plugins import ZMSPASCookieAuthHelper, ZMSPASSsoPlugin, ZMSPASRolePlugin, ZMSPASUserPlugin
+from .plugins import ZMSPASCookieAuthHelper, ZMSPASSsoPlugin, ZMSPASRolePlugin, ZMSPASUserPlugin, ZMSPASWebauthn
 
 registerMultiPlugin(ZMSPASCookieAuthHelper.ZMSPASCookieAuthHelper.meta_type)
 registerMultiPlugin(ZMSPASSsoPlugin.ZMSPASSsoPlugin.meta_type)
 registerMultiPlugin(ZMSPASRolePlugin.ZMSPASRolePlugin.meta_type)
 registerMultiPlugin(ZMSPASUserPlugin.ZMSPASUserPlugin.meta_type)
+registerMultiPlugin(ZMSPASWebauthn.ZMSPASWebauthn.meta_type)
 
 def initialize(context):
+
+    context.registerClass( ZMSPASWebauthn.ZMSPASWebauthn
+                         , permission=ManageUsers
+                         , constructors=(
+                            ZMSPASWebauthn.manage_addZMSPASWebauthnForm,
+                            ZMSPASWebauthn.addZMSPASWebauthn, )
+                         , visibility=None
+                         , icon='plugins/www/ZODBUserManager.gif'
+                         )
 
     context.registerClass( ZMSPASSsoPlugin.ZMSPASSsoPlugin
                          , permission=ManageUsers

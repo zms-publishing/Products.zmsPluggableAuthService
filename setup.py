@@ -25,6 +25,7 @@ setup(
     ],
     extras_require = {
         'nginx-sso':  ['itsdangerous',],
+        'webauthn': ['webauthn>=3,<4'],
     }
     
 )

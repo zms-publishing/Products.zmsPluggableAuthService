@@ -14,19 +14,30 @@
     button.btn {
       width: 6rem;
     }
+    main {
+      margin-top: max(calc(50vh - 17rem), 5rem);
+      background: #dfe6ec;
+      min-height: 20rem !important;
+      max-height: 20rem !important;
+      border-radius: 6px;
+      padding-top: 1rem;
+      border: 1px solid #cecfd1;
+     }
   </style>
 </head>
-<body>
+<body class="zmi">
   <main class="container">
     <h1>Passkey authentication <code id="user" tal:content="python:request.get('AUTHENTICATED_USER', '')">user</code></h1>
     <p>To register a passkey, first sign in using your existing account.</p>
-    <button class="btn btn-primary d-inline mb-2 mr-2" id="register" type="button" title="Register a passkey">Register</button>
-    <button class="btn btn-danger d-inline mb-2 mr-2" id="remove" type="button" title="Remove all my passkeys">Remove</button>
-    <form class="d-inline form-inline" id="login">
-      <button class="btn btn-success mb-2" type="submit" title="Sign in with a passkey">Sign in</button>
-      <input placeholder="User ID" class="form-control mb-2 mr-sm-2" id="user-id" name="user_id" autocomplete="username webauthn" required="required" />
-    </form>
-    <pre class="alert alert-info d-none mx-0 my-5" id="message" role="status" aria-live="polite"></pre>
+    <div class="form-group mb-3 zmi-controls">
+      <button class="btn btn-primary d-inline mb-2 mr-2" id="register" type="button" title="Register a passkey">Register</button>
+      <button class="btn btn-primary d-inline mb-2 mr-2" id="remove" type="button" title="Remove all my passkeys">Remove</button>
+      <form class="d-inline form-inline" id="login" style="white-space:nowrap">
+        <button class="btn btn-primary mb-2 mr-2" type="submit" title="Sign in with a passkey">Sign in</button>
+        <input placeholder="User ID" class="form-control mb-2" id="user-id" name="user_id" autocomplete="username webauthn" required="required" />
+      </form>
+    </div>
+    <pre class="alert alert-info d-none mx-0" id="message" role="status" aria-live="polite"></pre>
   </main>
   <script>
     // JavaScript code for handling WebAuthn login and registration
